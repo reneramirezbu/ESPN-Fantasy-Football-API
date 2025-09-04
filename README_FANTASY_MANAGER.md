@@ -92,7 +92,7 @@ Alternatively, edit `config/leagues.json`:
 Run the main application:
 
 ```bash
-node app.js
+node server.js
 ```
 
 The web interface will be available at: http://localhost:3000

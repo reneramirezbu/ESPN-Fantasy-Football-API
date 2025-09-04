@@ -228,7 +228,7 @@ async function main() {
     console.log('═══════════════════════════════════════════\n');
     
     console.log('To start the web interface, run:');
-    console.log('  node app.js\n');
+    console.log('  node server.js\n');
     console.log('Then open: http://localhost:3000\n');
 }
 

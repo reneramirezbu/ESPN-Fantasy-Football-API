@@ -17,7 +17,7 @@ This is a fork of the ESPN Fantasy Football API that has been extended with a co
 npm install
 
 # Run the fantasy manager application (web server on port 3000)
-node app.js
+node server.js
 
 # Run example usage scripts
 node example-usage.js
