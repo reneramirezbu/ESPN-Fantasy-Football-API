@@ -8,7 +8,9 @@ import _ from 'lodash';
  */
 class RankingsManager {
   constructor(options = {}) {
-    this.rankingsDir = options.rankingsDir || path.join(process.cwd(), 'data', 'rankings');
+    // Use /tmp directory for Vercel serverless functions
+    const baseDir = process.env.VERCEL ? '/tmp' : process.cwd();
+    this.rankingsDir = options.rankingsDir || path.join(baseDir, 'data', 'rankings');
     this.currentWeek = options.currentWeek || 1;
     this.season = options.season || new Date().getFullYear();
     
@@ -17,9 +19,13 @@ class RankingsManager {
     this.restOfSeasonRankings = null;
     this.dynastyRankings = null;
     
-    // Ensure rankings directory exists
-    if (!fs.existsSync(this.rankingsDir)) {
-      fs.mkdirSync(this.rankingsDir, { recursive: true });
+    // Ensure rankings directory exists (but handle failures gracefully on Vercel)
+    try {
+      if (!fs.existsSync(this.rankingsDir)) {
+        fs.mkdirSync(this.rankingsDir, { recursive: true });
+      }
+    } catch (error) {
+      console.log('Could not create rankings directory:', error.message);
     }
   }
   
