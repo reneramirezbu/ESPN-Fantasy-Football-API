@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Football Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🏈 Fantasy Football Manager</h1>
+            <nav>
+                <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+                <button class="nav-btn" data-view="lineup">Lineup Optimizer</button>
+                <button class="nav-btn" data-view="waiver">Waiver Wire</button>
+                <button class="nav-btn" data-view="rankings">Rankings</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view active">
+                <h2>League Dashboard</h2>
+                <div id="leagues-container" class="leagues-grid">
+                    <!-- League cards will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Lineup Optimizer View -->
+            <div id="lineup-view" class="view">
+                <h2>Lineup Optimizer</h2>
+                <div class="controls">
+                    <select id="league-select-lineup">
+                        <option value="">Select League</option>
+                    </select>
+                    <input type="number" id="week-input-lineup" placeholder="Week" min="1" max="18" value="1">
+                    <button id="optimize-btn">Optimize Lineup</button>
+                </div>
+                <div id="lineup-results">
+                    <!-- Lineup recommendations will appear here -->
+                </div>
+            </div>
+
+            <!-- Waiver Wire View -->
+            <div id="waiver-view" class="view">
+                <h2>Waiver Wire Analysis</h2>
+                <div class="controls">
+                    <select id="league-select-waiver">
+                        <option value="">Select League</option>
+                    </select>
+                    <input type="number" id="week-input-waiver" placeholder="Week" min="1" max="18" value="1">
+                    <button id="analyze-waiver-btn">Analyze Waiver Wire</button>
+                </div>
+                <div id="waiver-results">
+                    <!-- Waiver analysis will appear here -->
+                </div>
+            </div>
+
+            <!-- Rankings View -->
+            <div id="rankings-view" class="view">
+                <h2>Rankings Management</h2>
+                <div class="upload-section">
+                    <h3>Upload Rankings</h3>
+                    <div class="controls">
+                        <select id="ranking-type">
+                            <option value="weekly">Weekly</option>
+                            <option value="ros">Rest of Season</option>
+                        </select>
+                        <input type="number" id="ranking-week" placeholder="Week" min="1" max="18" value="1">
+                        <input type="file" id="ranking-file" accept=".csv,.json">
+                        <button id="upload-rankings-btn">Upload Rankings</button>
+                    </div>
+                </div>
+                <div id="rankings-display">
+                    <!-- Current rankings will be displayed here -->
+                </div>
+            </div>
+        </main>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

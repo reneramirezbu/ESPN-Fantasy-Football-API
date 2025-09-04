@@ -1,0 +1,38 @@
+{
+  "leagues": [
+    {
+      "name": "League 1",
+      "id": null,
+      "espnS2": null,
+      "SWID": null,
+      "teamName": "Your Team Name",
+      "active": true
+    },
+    {
+      "name": "League 2",
+      "id": null,
+      "espnS2": null,
+      "SWID": null,
+      "teamName": "Your Team Name",
+      "active": true
+    }
+  ],
+  "season": 2024,
+  "currentWeek": 1,
+  "settings": {
+    "autoUpdateRankings": true,
+    "rankingsSource": "fantasypros",
+    "optimizationStrategy": "highest-projected",
+    "includeFlexPositions": true
+  },
+  "positions": {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "FLEX": 1,
+    "DST": 1,
+    "K": 1,
+    "BENCH": 7
+  }
+}
