@@ -292,43 +292,97 @@ class FantasyFootballApp {
     this.app.use(express.json());
     this.app.use(express.static(path.join(__dirname, 'web-client')));
     
+    // Enable CORS for API endpoints
+    this.app.use('/api', (req, res, next) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      next();
+    });
+    
     // API Routes
-    this.app.get('/api/leagues', async (req, res) => {
+    this.app.get('/api/leagues', async (req, res, next) => {
       try {
         const summaries = await this.leagueManager.getLeaguesSummary();
-        res.json(summaries);
+        res.json({ success: true, data: summaries });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
       }
     });
     
-    this.app.get('/api/leagues/:id/lineup', async (req, res) => {
+    this.app.get('/api/leagues/:id/lineup', async (req, res, next) => {
       try {
         const week = parseInt(req.query.week) || 1;
         const recommendations = await this.lineupOptimizer.getLineupRecommendations(
           parseInt(req.params.id),
           week
         );
-        res.json(recommendations);
+        res.json({ success: true, data: recommendations });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
       }
     });
     
-    this.app.get('/api/leagues/:id/waiver', async (req, res) => {
+    this.app.get('/api/leagues/:id/waiver', async (req, res, next) => {
       try {
         const week = parseInt(req.query.week) || 1;
         const analysis = await this.waiverAnalyzer.analyzeWaiverWire(
           parseInt(req.params.id),
           week
         );
-        res.json(analysis);
+        res.json({ success: true, data: analysis });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
       }
     });
     
-    this.app.post('/api/rankings/upload', express.json(), async (req, res) => {
+    // New endpoint: Get only user's team with roster
+    this.app.get('/api/leagues/:id/my-team', async (req, res, next) => {
+      try {
+        const leagueId = parseInt(req.params.id);
+        const week = parseInt(req.query.week) || this.leagueManager.currentWeek;
+        
+        // Get user's team with roster
+        const myTeam = await this.leagueManager.getMyRoster(leagueId, null, week);
+        
+        // Get lineup (starters vs bench)
+        const lineup = await this.leagueManager.getLineup(leagueId, week);
+        
+        // Filter to only essential player data for memory efficiency
+        const formatPlayer = (player) => ({
+          id: player.id,
+          name: player.fullName || `${player.firstName} ${player.lastName}`,
+          position: player.defaultPosition,
+          team: player.proTeamAbbreviation,
+          injuryStatus: player.injuryStatus || 'ACTIVE',
+          projectedPoints: player.projectedRawStats?.appliedStatTotal || 0,
+          actualPoints: player.rawStats?.appliedStatTotal || 0,
+          percentOwned: player.percentOwned || 0,
+          percentStarted: player.percentStarted || 0
+        });
+        
+        const response = {
+          team: {
+            id: myTeam.id,
+            name: myTeam.name || myTeam.nickname,
+            record: `${myTeam.wins}-${myTeam.losses}${myTeam.ties ? `-${myTeam.ties}` : ''}`,
+            standing: myTeam.playoffSeed || myTeam.rankCalculatedFinal || 'N/A',
+            points: myTeam.points,
+            projectedPoints: myTeam.projectedRawStats?.appliedStatTotal || 0
+          },
+          roster: {
+            starters: lineup.starters.map(formatPlayer),
+            bench: lineup.bench.map(formatPlayer)
+          },
+          week: week
+        };
+        
+        res.json({ success: true, data: response });
+      } catch (error) {
+        next(error);
+      }
+    });
+    
+    this.app.post('/api/rankings/upload', express.json(), async (req, res, next) => {
       try {
         const { type, week, data } = req.body;
         
@@ -342,8 +396,31 @@ class FantasyFootballApp {
         
         res.json({ success: true, message: 'Rankings uploaded successfully' });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
       }
+    });
+    
+    // Global error handling middleware - MUST be last
+    this.app.use((err, req, res, next) => {
+      console.error('API Error:', err.message);
+      
+      // Always return JSON for API errors
+      const status = err.status || 500;
+      const response = {
+        success: false,
+        error: {
+          message: err.message || 'An unexpected error occurred',
+          code: err.code || 'INTERNAL_ERROR',
+          status: status
+        }
+      };
+      
+      // Add details in development mode
+      if (process.env.NODE_ENV === 'development') {
+        response.error.stack = err.stack;
+      }
+      
+      res.status(status).json(response);
     });
   }
   

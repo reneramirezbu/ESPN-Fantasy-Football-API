@@ -1,11 +1,13 @@
 /**
  * Fantasy Football Manager Web Client
+ * Production-ready with comprehensive error handling
  */
 
 class FFWebClient {
     constructor() {
         this.currentView = 'dashboard';
         this.leagues = [];
+        this.currentTeam = null;
         this.init();
     }
     
@@ -42,26 +44,191 @@ class FFWebClient {
         });
         
         this.currentView = viewName;
+        
+        // Load team data when switching to dashboard
+        if (viewName === 'dashboard' && this.leagues.length > 0) {
+            this.loadMyTeam(this.leagues[0].leagueId);
+        }
     }
     
     showLoading(show = true) {
         document.getElementById('loading').classList.toggle('hidden', !show);
     }
     
+    /**
+     * Safe JSON parsing with error handling
+     */
+    async parseJSON(response) {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (error) {
+            console.error('JSON Parse Error:', error);
+            console.error('Response text:', text);
+            throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}...`);
+        }
+    }
+    
+    /**
+     * Centralized API call with error handling
+     */
+    async apiCall(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            
+            const data = await this.parseJSON(response);
+            
+            // Check for API error response
+            if (data.success === false) {
+                throw new Error(data.error?.message || 'API request failed');
+            }
+            
+            return data;
+        } catch (error) {
+            // Re-throw with more context
+            if (error.message.includes('Failed to fetch')) {
+                throw new Error('Unable to connect to server. Please check your connection.');
+            }
+            throw error;
+        }
+    }
+    
     async loadLeagues() {
         this.showLoading(true);
         
         try {
-            const response = await fetch('/api/leagues');
-            this.leagues = await response.json();
+            const result = await this.apiCall('/api/leagues');
+            this.leagues = result.data || result; // Handle both old and new API format
+            
+            // Filter out leagues with errors
+            const validLeagues = this.leagues.filter(l => !l.error);
+            if (validLeagues.length === 0) {
+                throw new Error('No valid leagues found. Please check your ESPN credentials.');
+            }
             
             this.displayLeagues();
             this.populateLeagueSelects();
+            
+            // Automatically load first league's team data
+            if (validLeagues.length > 0) {
+                await this.loadMyTeam(validLeagues[0].leagueId);
+            }
         } catch (error) {
             this.showError('Failed to load leagues: ' + error.message);
         } finally {
             this.showLoading(false);
         }
+    }
+    
+    /**
+     * Load and display user's team roster
+     */
+    async loadMyTeam(leagueId) {
+        if (!leagueId) return;
+        
+        try {
+            const result = await this.apiCall(`/api/leagues/${leagueId}/my-team`);
+            this.currentTeam = result.data;
+            this.displayMyTeam();
+        } catch (error) {
+            console.error('Failed to load team data:', error);
+            // Don't show error for team loading, just log it
+        }
+    }
+    
+    /**
+     * Display user's team with roster
+     */
+    displayMyTeam() {
+        const container = document.getElementById('my-team-container');
+        
+        if (!container) {
+            // Create container if it doesn't exist
+            const leaguesContainer = document.getElementById('leagues-container');
+            const teamDiv = document.createElement('div');
+            teamDiv.id = 'my-team-container';
+            teamDiv.className = 'my-team-section';
+            leaguesContainer.parentNode.insertBefore(teamDiv, leaguesContainer.nextSibling);
+        }
+        
+        const teamContainer = document.getElementById('my-team-container') || container;
+        
+        if (!this.currentTeam) {
+            teamContainer.innerHTML = '';
+            return;
+        }
+        
+        const { team, roster } = this.currentTeam;
+        
+        // Format player row
+        const formatPlayerRow = (player, isStarter = true) => `
+            <tr class="${player.injuryStatus !== 'ACTIVE' ? 'injured' : ''}">
+                <td>${isStarter ? '▶' : ''}</td>
+                <td>${player.name}</td>
+                <td>${player.position}</td>
+                <td>${player.team || '-'}</td>
+                <td class="${player.injuryStatus !== 'ACTIVE' ? 'injury-status' : ''}">
+                    ${player.injuryStatus}
+                </td>
+                <td>${player.projectedPoints.toFixed(1)}</td>
+                <td>${player.actualPoints.toFixed(1)}</td>
+            </tr>
+        `;
+        
+        teamContainer.innerHTML = `
+            <div class="my-team-card">
+                <h2>My Team: ${team.name}</h2>
+                <div class="team-summary">
+                    <span>Record: ${team.record}</span>
+                    <span>Standing: ${team.standing}</span>
+                    <span>Points: ${team.points?.toFixed(1) || 'N/A'}</span>
+                </div>
+                
+                <div class="roster-section">
+                    <h3>Starting Lineup</h3>
+                    <table class="roster-table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Player</th>
+                                <th>Pos</th>
+                                <th>Team</th>
+                                <th>Status</th>
+                                <th>Proj</th>
+                                <th>Actual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${roster.starters.map(p => formatPlayerRow(p, true)).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <h3>Bench</h3>
+                    <table class="roster-table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Player</th>
+                                <th>Pos</th>
+                                <th>Team</th>
+                                <th>Status</th>
+                                <th>Proj</th>
+                                <th>Actual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${roster.bench.map(p => formatPlayerRow(p, false)).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
     
     displayLeagues() {
@@ -76,12 +243,15 @@ class FFWebClient {
             return;
         }
         
+        // Only show league summary cards, not other teams
         container.innerHTML = this.leagues.map(league => `
-            <div class="league-card">
+            <div class="league-card ${league.error ? 'has-error' : ''}" 
+                 onclick="window.ffClient.loadMyTeam(${league.leagueId})"
+                 style="cursor: pointer;">
                 <h3>${league.leagueName}</h3>
                 <div class="league-stats">
                     <div class="stat-item">
-                        <span class="stat-label">Team:</span>
+                        <span class="stat-label">My Team:</span>
                         <span class="stat-value">${league.teamName || 'N/A'}</span>
                     </div>
                     <div class="stat-item">
@@ -94,11 +264,7 @@ class FFWebClient {
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Points:</span>
-                        <span class="stat-value">${league.points || 'N/A'}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Roster Size:</span>
-                        <span class="stat-value">${league.rosterSize || 'N/A'}</span>
+                        <span class="stat-value">${league.points?.toFixed(1) || 'N/A'}</span>
                     </div>
                 </div>
                 ${league.error ? `
@@ -115,6 +281,8 @@ class FFWebClient {
         
         selects.forEach(selectId => {
             const select = document.getElementById(selectId);
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Select League</option>';
             
             this.leagues.forEach(league => {
@@ -141,12 +309,8 @@ class FFWebClient {
         this.showLoading(true);
         
         try {
-            const response = await fetch(`/api/leagues/${leagueId}/lineup?week=${week}`);
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            const result = await this.apiCall(`/api/leagues/${leagueId}/lineup?week=${week}`);
+            const data = result.data || result;
             
             this.displayLineupRecommendations(data);
         } catch (error) {
@@ -156,100 +320,66 @@ class FFWebClient {
         }
     }
     
-    displayLineupRecommendations(data) {
+    displayLineupRecommendations(recommendations) {
         const container = document.getElementById('lineup-results');
         
-        const summary = data.recommendations?.summary || 'No recommendations available';
-        const changes = data.changes || [];
-        const improvement = data.projectedImprovement || {};
-        const confidence = data.recommendations?.confidenceScore || 0;
+        if (!recommendations || !recommendations.optimal) {
+            container.innerHTML = '<div class="alert alert-warning">No recommendations available</div>';
+            return;
+        }
         
-        let html = `
-            <div class="lineup-summary">
-                <h3>Optimization Summary</h3>
-                <p>${summary}</p>
-                <div class="league-stats" style="margin-top: 15px;">
-                    <div class="stat-item">
-                        <span class="stat-label">Current Projected:</span>
-                        <span class="stat-value">${improvement.currentProjected?.toFixed(1) || 'N/A'} pts</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Optimal Projected:</span>
-                        <span class="stat-value">${improvement.optimalProjected?.toFixed(1) || 'N/A'} pts</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Improvement:</span>
-                        <span class="stat-value" style="color: ${improvement.improvement > 0 ? '#4CAF50' : '#666'}">
-                            +${improvement.improvement?.toFixed(1) || 0} pts
-                        </span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Confidence:</span>
-                        <span class="stat-value">${confidence}%</span>
-                    </div>
+        const { optimal, current, summary, confidence } = recommendations;
+        
+        container.innerHTML = `
+            <div class="recommendations-card">
+                <h3>Lineup Optimization Results</h3>
+                <div class="confidence-score">
+                    Confidence: ${confidence}%
                 </div>
+                <p class="summary">${summary}</p>
+                
+                <div class="lineup-comparison">
+                    <div class="lineup-column">
+                        <h4>Optimal Lineup</h4>
+                        <div class="player-list">
+                            ${optimal.starters.map(player => `
+                                <div class="player-item optimal">
+                                    <span class="player-name">${player.fullName || player.name}</span>
+                                    <span class="player-position">${player.defaultPosition || player.position}</span>
+                                    <span class="player-points">${player.projectedPoints?.toFixed(1) || '0.0'} pts</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    ${current ? `
+                    <div class="lineup-column">
+                        <h4>Current Lineup</h4>
+                        <div class="player-list">
+                            ${current.starters.map(player => `
+                                <div class="player-item current">
+                                    <span class="player-name">${player.fullName || player.name}</span>
+                                    <span class="player-position">${player.defaultPosition || player.position}</span>
+                                    <span class="player-points">${player.projectedPoints?.toFixed(1) || '0.0'} pts</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                ${recommendations.changes && recommendations.changes.length > 0 ? `
+                    <div class="recommended-changes">
+                        <h4>Recommended Changes</h4>
+                        <ul>
+                            ${recommendations.changes.map(change => `
+                                <li>${change.action}: ${change.player} ${change.reason ? `(${change.reason})` : ''}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
             </div>
         `;
-        
-        if (changes.length > 0) {
-            html += `
-                <div class="lineup-changes">
-                    <h3>Recommended Changes</h3>
-                    ${changes.map(change => {
-                        const playerName = change.player.fullName || 
-                                         `${change.player.firstName} ${change.player.lastName}`;
-                        return `
-                            <div class="change-item">
-                                <span class="change-action ${change.action.toLowerCase()}">
-                                    ${change.action}
-                                </span>
-                                <span class="player-name">${playerName}</span>
-                                <span class="player-position">${change.player.defaultPosition}</span>
-                                <div style="margin-top: 5px; color: #666; font-size: 0.9rem;">
-                                    ${change.reason}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-        
-        // Display optimal lineup
-        if (data.optimal) {
-            html += `
-                <div class="lineup-grid">
-                    <h3>Optimal Lineup</h3>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Position</th>
-                                <th>Player</th>
-                                <th>Team</th>
-                                <th>Rank</th>
-                                <th>Projected</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.optimal.starters.map(player => {
-                                const name = player.fullName || `${player.firstName} ${player.lastName}`;
-                                return `
-                                    <tr>
-                                        <td><strong>${player.lineupPosition}</strong></td>
-                                        <td>${name}</td>
-                                        <td>${player.proTeam || 'N/A'}</td>
-                                        <td>${player.ranking || 'N/A'}</td>
-                                        <td>${player.projectedPoints?.toFixed(1) || 'N/A'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-        
-        container.innerHTML = html;
     }
     
     async analyzeWaiverWire() {
@@ -264,12 +394,8 @@ class FFWebClient {
         this.showLoading(true);
         
         try {
-            const response = await fetch(`/api/leagues/${leagueId}/waiver?week=${week}`);
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            const result = await this.apiCall(`/api/leagues/${leagueId}/waiver?week=${week}`);
+            const data = result.data || result;
             
             this.displayWaiverAnalysis(data);
         } catch (error) {
@@ -279,203 +405,113 @@ class FFWebClient {
         }
     }
     
-    displayWaiverAnalysis(data) {
+    displayWaiverAnalysis(analysis) {
         const container = document.getElementById('waiver-results');
         
-        const summary = data.summary || 'No analysis available';
-        const recommendations = data.recommendations || [];
-        const breakouts = data.breakoutCandidates || [];
-        const stashes = data.stashCandidates || [];
-        
-        let html = `
-            <div class="alert alert-info">
-                <strong>Summary:</strong> ${summary}
-            </div>
-        `;
-        
-        if (recommendations.length > 0) {
-            html += `
-                <div class="waiver-section">
-                    <h3>Top Recommendations</h3>
-                    ${recommendations.map((rec, index) => {
-                        const addName = rec.player.fullName || 
-                                       `${rec.player.firstName} ${rec.player.lastName}`;
-                        const dropName = rec.dropPlayer.fullName || 
-                                        `${rec.dropPlayer.firstName} ${rec.dropPlayer.lastName}`;
-                        
-                        return `
-                            <div class="waiver-recommendation">
-                                <span class="waiver-priority priority-${rec.priority.toLowerCase()}">
-                                    ${rec.priority}
-                                </span>
-                                <strong>#${index + 1}</strong>
-                                
-                                <div class="player-info">
-                                    <div>
-                                        <span style="color: #4CAF50; font-weight: bold;">ADD:</span>
-                                        <span class="player-name">${addName}</span>
-                                        <span class="player-position">${rec.player.defaultPosition}</span>
-                                    </div>
-                                    <div>
-                                        <span style="color: #f44336; font-weight: bold;">DROP:</span>
-                                        <span class="player-name">${dropName}</span>
-                                    </div>
-                                </div>
-                                
-                                <div style="margin-top: 10px;">
-                                    <strong>Reason:</strong> ${rec.reason}
-                                </div>
-                                <div style="margin-top: 5px;">
-                                    <strong>Confidence:</strong> ${rec.confidence}%
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-        
-        if (breakouts.length > 0) {
-            html += `
-                <div class="waiver-section">
-                    <h3>💎 Breakout Candidates</h3>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Position</th>
-                                <th>Week Rank</th>
-                                <th>ROS Rank</th>
-                                <th>Ownership</th>
-                                <th>Reason</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${breakouts.map(candidate => {
-                                const name = candidate.player.fullName || 
-                                           `${candidate.player.firstName} ${candidate.player.lastName}`;
-                                return `
-                                    <tr>
-                                        <td><strong>${name}</strong></td>
-                                        <td>${candidate.player.defaultPosition}</td>
-                                        <td>${candidate.weeklyRank || 'N/A'}</td>
-                                        <td>${candidate.rosRank || 'N/A'}</td>
-                                        <td>${candidate.ownership || 0}%</td>
-                                        <td>${candidate.breakoutReason}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-        
-        container.innerHTML = html;
-    }
-    
-    async uploadRankings() {
-        const type = document.getElementById('ranking-type').value;
-        const week = document.getElementById('ranking-week').value;
-        const fileInput = document.getElementById('ranking-file');
-        const file = fileInput.files[0];
-        
-        if (!file) {
-            this.showError('Please select a file to upload');
+        if (!analysis || !analysis.recommendations) {
+            container.innerHTML = '<div class="alert alert-warning">No waiver recommendations available</div>';
             return;
         }
         
-        this.showLoading(true);
-        
-        try {
-            const text = await file.text();
-            let data;
-            
-            if (file.name.endsWith('.json')) {
-                data = JSON.parse(text);
-            } else if (file.name.endsWith('.csv')) {
-                data = this.parseCSV(text);
-            } else {
-                throw new Error('Unsupported file format. Please use .json or .csv');
-            }
-            
-            const response = await fetch('/api/rankings/upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    type: type,
-                    week: week,
-                    data: data
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            
-            this.showSuccess('Rankings uploaded successfully!');
-            fileInput.value = '';
-        } catch (error) {
-            this.showError('Failed to upload rankings: ' + error.message);
-        } finally {
-            this.showLoading(false);
-        }
+        container.innerHTML = `
+            <div class="waiver-analysis-card">
+                <h3>Waiver Wire Analysis</h3>
+                <p class="summary">${analysis.summary}</p>
+                
+                ${analysis.recommendations.length > 0 ? `
+                    <div class="waiver-recommendations">
+                        <h4>Top Recommendations</h4>
+                        ${analysis.recommendations.slice(0, 5).map((rec, index) => `
+                            <div class="waiver-item">
+                                <div class="waiver-rank">#${index + 1}</div>
+                                <div class="waiver-details">
+                                    <div class="waiver-action">
+                                        <span class="add">ADD: ${rec.player.fullName || rec.player.name}</span>
+                                        <span class="drop">DROP: ${rec.dropPlayer?.fullName || rec.dropPlayer?.name || 'N/A'}</span>
+                                    </div>
+                                    <div class="waiver-reason">${rec.reason}</div>
+                                    <div class="waiver-meta">
+                                        Priority: ${rec.priority} | Confidence: ${rec.confidence}%
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '<div class="alert alert-info">No waiver moves recommended this week</div>'}
+            </div>
+        `;
     }
     
-    parseCSV(text) {
-        const lines = text.trim().split('\n');
-        const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    async uploadRankings() {
+        const fileInput = document.getElementById('rankings-file');
+        const weekInput = document.getElementById('rankings-week');
+        const typeSelect = document.getElementById('rankings-type');
         
-        return lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim());
-            const player = {};
-            
-            headers.forEach((header, index) => {
-                const value = values[index];
-                if (header === 'rank' || header.includes('points')) {
-                    player[header] = parseFloat(value) || 0;
-                } else {
-                    player[header] = value;
-                }
-            });
-            
-            return player;
-        });
+        if (!fileInput.files[0]) {
+            this.showError('Please select a file');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = async (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                const result = await this.apiCall('/api/rankings/upload', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: typeSelect.value,
+                        week: weekInput.value,
+                        data: data
+                    })
+                });
+                
+                this.showSuccess('Rankings uploaded successfully');
+            } catch (error) {
+                this.showError('Failed to upload rankings: ' + error.message);
+            }
+        };
+        
+        reader.readAsText(file);
     }
     
     showError(message) {
-        this.showNotification(message, 'error');
+        const errorDiv = document.getElementById('error-message') || this.createMessageDiv('error-message');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
     }
     
     showSuccess(message) {
-        this.showNotification(message, 'success');
+        const successDiv = document.getElementById('success-message') || this.createMessageDiv('success-message');
+        successDiv.className = 'alert alert-success';
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            successDiv.style.display = 'none';
+        }, 3000);
     }
     
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type}`;
-        notification.textContent = message;
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.zIndex = '1001';
-        notification.style.minWidth = '300px';
-        
-        document.body.appendChild(notification);
-        
-        // Remove after 5 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 5000);
+    createMessageDiv(id) {
+        const div = document.createElement('div');
+        div.id = id;
+        div.style.position = 'fixed';
+        div.style.top = '20px';
+        div.style.right = '20px';
+        div.style.zIndex = '9999';
+        document.body.appendChild(div);
+        return div;
     }
 }
 
-// Initialize the app when DOM is ready
+// Initialize the web client
 document.addEventListener('DOMContentLoaded', () => {
     window.ffClient = new FFWebClient();
 });

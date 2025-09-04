@@ -117,18 +117,48 @@ class LeagueManager {
     const league = this.leagues.find(l => l.id === leagueId);
     const searchName = teamName || league?.teamName;
     
-    if (!searchName) {
-      // If no team name specified, return the first team (assume it's yours)
-      return teams[0];
+    if (!teams || teams.length === 0) {
+      throw new Error(`No teams found in league ${leagueId}`);
     }
     
-    const myTeam = teams.find(team => 
-      team.name?.toLowerCase() === searchName.toLowerCase() ||
-      team.ownerName?.toLowerCase() === searchName.toLowerCase()
-    );
+    // Try multiple matching strategies
+    let myTeam = null;
     
+    if (searchName) {
+      // Strategy 1: Exact match (case-insensitive)
+      myTeam = teams.find(team => 
+        team.name?.toLowerCase() === searchName.toLowerCase() ||
+        team.nickname?.toLowerCase() === searchName.toLowerCase()
+      );
+      
+      // Strategy 2: Partial match
+      if (!myTeam) {
+        myTeam = teams.find(team => 
+          team.name?.toLowerCase().includes(searchName.toLowerCase()) ||
+          team.nickname?.toLowerCase().includes(searchName.toLowerCase())
+        );
+      }
+      
+      // Strategy 3: Check owner name
+      if (!myTeam) {
+        myTeam = teams.find(team => 
+          team.owners && team.owners.some(owner => 
+            owner.toLowerCase().includes(searchName.toLowerCase())
+          )
+        );
+      }
+    }
+    
+    // Strategy 4: If still no match, use the first team owned by the authenticated user
+    // This requires checking the team's ownership flag
     if (!myTeam) {
-      throw new Error(`Team "${searchName}" not found in league ${leagueId}`);
+      myTeam = teams.find(team => team.isCurrentUserTeam === true);
+    }
+    
+    // Strategy 5: Fallback - return the first team and log a warning
+    if (!myTeam) {
+      console.warn(`Team "${searchName}" not found in league ${leagueId}. Using first team as fallback.`);
+      myTeam = teams[0];
     }
     
     return myTeam;
