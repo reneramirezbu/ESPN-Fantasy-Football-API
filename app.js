@@ -303,7 +303,7 @@ class FantasyFootballApp {
     this.app.get('/api/leagues', async (req, res, next) => {
       try {
         const summaries = await this.leagueManager.getLeaguesSummary();
-        res.json({ success: true, data: summaries });
+        res.json(summaries); // Return raw array, not wrapped
       } catch (error) {
         next(error);
       }
@@ -316,7 +316,7 @@ class FantasyFootballApp {
           parseInt(req.params.id),
           week
         );
-        res.json({ success: true, data: recommendations });
+        res.json(recommendations); // Return raw data, not wrapped
       } catch (error) {
         next(error);
       }
@@ -329,7 +329,7 @@ class FantasyFootballApp {
           parseInt(req.params.id),
           week
         );
-        res.json({ success: true, data: analysis });
+        res.json(analysis); // Return raw data, not wrapped
       } catch (error) {
         next(error);
       }
@@ -376,7 +376,7 @@ class FantasyFootballApp {
           week: week
         };
         
-        res.json({ success: true, data: response });
+        res.json(response);
       } catch (error) {
         next(error);
       }
@@ -394,7 +394,7 @@ class FantasyFootballApp {
           await this.rankingsManager.loadRestOfSeasonRankings('ros.json');
         }
         
-        res.json({ success: true, message: 'Rankings uploaded successfully' });
+        res.json({ success: true, message: 'Rankings uploaded successfully' }); // Keep wrapped for upload response
       } catch (error) {
         next(error);
       }

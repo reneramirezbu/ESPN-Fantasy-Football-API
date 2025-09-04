@@ -53,12 +53,50 @@ class FFWebClient {
         
         try {
             const response = await fetch('/api/leagues');
-            this.leagues = await response.json();
+            
+            // Check if response is OK before parsing
+            if (!response.ok) {
+                const contentType = response.headers.get('content-type');
+                let errorMessage;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || 'Server error occurred';
+                } else {
+                    // Response is not JSON (probably HTML error page)
+                    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+                }
+                
+                throw new Error(errorMessage);
+            }
+            
+            // Parse the successful JSON response
+            const data = await response.json();
+            
+            // Handle both array and object responses
+            if (Array.isArray(data)) {
+                this.leagues = data;
+            } else if (data && data.data) {
+                // Handle wrapped responses (backward compatibility)
+                this.leagues = data.data;
+            } else {
+                this.leagues = [];
+            }
             
             this.displayLeagues();
             this.populateLeagueSelects();
         } catch (error) {
+            console.error('Error loading leagues:', error);
             this.showError('Failed to load leagues: ' + error.message);
+            
+            // Show demo mode when API fails
+            this.leagues = [{
+                id: 'demo',
+                leagueName: 'Demo Mode',
+                teamName: 'Unable to connect to server',
+                error: 'Please check your connection and configuration'
+            }];
+            this.displayLeagues();
         } finally {
             this.showLoading(false);
         }
@@ -118,9 +156,13 @@ class FFWebClient {
             select.innerHTML = '<option value="">Select League</option>';
             
             this.leagues.forEach(league => {
-                if (!league.error) {
+                // Use id or leagueId, handle demo mode
+                const leagueId = league.id || league.leagueId;
+                const isValidLeague = leagueId && leagueId !== 'demo' && !league.isDemo;
+                
+                if (isValidLeague) {
                     select.innerHTML += `
-                        <option value="${league.leagueId}">
+                        <option value="${leagueId}">
                             ${league.leagueName} - ${league.teamName}
                         </option>
                     `;

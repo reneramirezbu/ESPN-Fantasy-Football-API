@@ -1,5 +1,8 @@
-const _ = require('lodash');
-const path = require('path');
+import _ from 'lodash';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const baseConfig = {
   entry: './src/index.js',
@@ -22,7 +25,7 @@ const baseConfig = {
   mode: 'development'
 };
 
-module.exports = [
+export default [
   _.merge({}, baseConfig, {
     output: {
       filename: 'web.js'

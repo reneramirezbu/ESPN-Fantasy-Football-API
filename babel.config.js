@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   presets: ['@babel/preset-env'],
   plugins: [
     ["@babel/plugin-transform-class-properties", { "loose": true }],
