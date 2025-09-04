@@ -11,9 +11,16 @@ const baseConfig = {
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        loader: "babel-loader"
+        loader: "babel-loader",
+        resolve: {
+          fullySpecified: false
+        }
       }
     ]
+  },
+  resolve: {
+    extensions: ['.js'],
+    fullySpecified: false
   },
   output: {
     path: __dirname,
