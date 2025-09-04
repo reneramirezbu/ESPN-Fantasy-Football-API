@@ -1,14 +1,14 @@
 import axios from 'axios';
 import _ from 'lodash';
 
-import Boxscore from '../boxscore/boxscore';
-import DraftPlayer from '../draft-player/draft-player';
-import FreeAgentPlayer from '../free-agent-player/free-agent-player';
-import League from '../league/league';
-import NFLGame from '../nfl-game/nfl-game';
-import Team from '../team/team';
+import Boxscore from '../boxscore/boxscore.js';
+import DraftPlayer from '../draft-player/draft-player.js';
+import FreeAgentPlayer from '../free-agent-player/free-agent-player.js';
+import League from '../league/league.js';
+import NFLGame from '../nfl-game/nfl-game.js';
+import Team from '../team/team.js';
 
-import { flattenObjectSansNumericKeys } from '../utils';
+import { flattenObjectSansNumericKeys } from '../utils.js';
 
 axios.defaults.baseURL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/';
 
