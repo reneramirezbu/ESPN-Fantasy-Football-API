@@ -14,7 +14,15 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api|_next|favicon.ico|.*\\.).*)",
+      "source": "/styles.css",
+      "destination": "/public/styles.css"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/public/app.js"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/public/index.html"
     }
   ],
