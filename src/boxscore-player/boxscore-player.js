@@ -1,9 +1,9 @@
 import _ from 'lodash';
 
-import Player from '../player/player';
-import { parsePlayerStats } from '../player-stats/player-stats';
+import Player from '../player/player.js';
+import { parsePlayerStats } from '../player-stats/player-stats.js';
 
-import { slotCategoryIdToPositionMap } from '../constants';
+import { slotCategoryIdToPositionMap } from '../constants.js';
 
 /* global PlayerStats */
 

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
-import BaseObject from '../base-classes/base-object/base-object';
-import { scoringItemToId } from '../constants';
+import BaseObject from '../base-classes/base-object/base-object.js';
+import { scoringItemToId } from '../constants.js';
 
 /* global ScoringItems */
 

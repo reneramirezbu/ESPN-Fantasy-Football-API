@@ -1,4 +1,4 @@
-import PlayerStats from '../player-stats/player-stats';
+import PlayerStats from '../player-stats/player-stats.js';
 
 import FreeAgentPlayer from './free-agent-player';
 

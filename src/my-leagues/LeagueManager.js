@@ -1,4 +1,4 @@
-import { Client } from '../client/client.js';
+import Client from '../client/client.js';
 import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';

@@ -1,8 +1,8 @@
 import _ from 'lodash';
 
-import PlayerStats from '../player-stats/player-stats';
+import PlayerStats from '../player-stats/player-stats.js';
 
-import { slotCategoryIdToPositionMap } from '../constants';
+import { slotCategoryIdToPositionMap } from '../constants.js';
 
 import BoxscorePlayer from './boxscore-player.js';
 

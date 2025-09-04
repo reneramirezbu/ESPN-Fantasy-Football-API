@@ -1,8 +1,8 @@
 import _ from 'lodash';
 
-import BaseObject from '../base-classes/base-object/base-object';
+import BaseObject from '../base-classes/base-object/base-object.js';
 
-import BoxscorePlayer from '../boxscore-player/boxscore-player';
+import BoxscorePlayer from '../boxscore-player/boxscore-player.js';
 
 /**
  * Represents a boxscore for a week.

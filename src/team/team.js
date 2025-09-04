@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import BaseCacheableObject from '../base-classes/base-cacheable-object/base-cacheable-object.js';
 
-import Player from '../player/player';
+import Player from '../player/player.js';
 
 /**
  * Represents a fantasy football team in a league.

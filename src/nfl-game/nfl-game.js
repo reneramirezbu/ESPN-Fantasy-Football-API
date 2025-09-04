@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import BaseObject from '../base-classes/base-object/base-object';
+import BaseObject from '../base-classes/base-object/base-object.js';
 
 import {
   nflTeamIdToNFLTeam,

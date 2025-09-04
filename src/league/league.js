@@ -1,11 +1,11 @@
 import _ from 'lodash';
 
-import BaseObject from '../base-classes/base-object/base-object';
+import BaseObject from '../base-classes/base-object/base-object.js';
 
 import {
   scoringIdToItem,
   slotCategoryIdToPositionMap
-} from '../constants';
+} from '../constants.js';
 
 /* global DRAFT_TYPE, LINEUP_LOCK_TIMES */
 

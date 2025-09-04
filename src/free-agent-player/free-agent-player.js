@@ -1,6 +1,6 @@
-import Player from '../player/player';
+import Player from '../player/player.js';
 
-import { parsePlayerStats } from '../player-stats/player-stats';
+import { parsePlayerStats } from '../player-stats/player-stats.js';
 
 /* global PlayerStats */
 
