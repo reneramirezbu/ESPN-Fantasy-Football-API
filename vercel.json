@@ -8,22 +8,22 @@
       "memory": 512
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "src": "/api/(.*)",
+      "dest": "/api"
     },
     {
-      "source": "/styles.css",
-      "destination": "/public/styles.css"
+      "src": "/styles.css",
+      "dest": "/public/styles.css"
     },
     {
-      "source": "/app.js",
-      "destination": "/public/app.js"
+      "src": "/app.js",
+      "dest": "/public/app.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/public/index.html"
+      "src": "/(.*)",
+      "dest": "/public/index.html"
     }
   ],
   "headers": [
