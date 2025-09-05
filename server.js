@@ -304,6 +304,13 @@ class FantasyFootballApp {
     // API Routes
     this.app.get('/api/leagues', async (req, res, next) => {
       try {
+        // Add cache-control headers to prevent browser caching
+        res.set({
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        
         const summaries = await this.leagueManager.getLeaguesSummary();
         res.json(summaries); // Return raw array, not wrapped
       } catch (error) {

@@ -127,10 +127,17 @@ class LeagueManager {
     
     // Strategy 0: If team ID is provided, use it directly
     if (searchId) {
+      console.log(`🔍 Searching for team with ID ${searchId} in league ${leagueId}`);
+      console.log(`📋 Available teams in league:`);
+      teams.forEach(team => {
+        console.log(`   - ID: ${team.id}, Name: ${team.name || team.nickname}`);
+      });
       myTeam = teams.find(team => team.id === searchId);
       if (myTeam) {
+        console.log(`✅ Found team by ID: ${myTeam.name || myTeam.nickname} (ID: ${myTeam.id})`);
         return myTeam;
       }
+      console.log(`⚠️ Team with ID ${searchId} not found, trying name-based matching...`);
     }
     
     if (searchName) {
