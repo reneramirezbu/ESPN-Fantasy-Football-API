@@ -116,6 +116,7 @@ class LeagueManager {
     // Find your team
     const league = this.leagues.find(l => l.id === leagueId);
     const searchName = teamName || league?.teamName;
+    const searchId = league?.teamId;
     
     if (!teams || teams.length === 0) {
       throw new Error(`No teams found in league ${leagueId}`);
@@ -123,6 +124,14 @@ class LeagueManager {
     
     // Try multiple matching strategies
     let myTeam = null;
+    
+    // Strategy 0: If team ID is provided, use it directly
+    if (searchId) {
+      myTeam = teams.find(team => team.id === searchId);
+      if (myTeam) {
+        return myTeam;
+      }
+    }
     
     if (searchName) {
       // Strategy 1: Exact match (case-insensitive)

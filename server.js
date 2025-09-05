@@ -78,6 +78,7 @@ class FantasyFootballApp {
         espnS2: process.env.LEAGUE1_ESPN_S2,
         SWID: process.env.LEAGUE1_SWID,
         teamName: process.env.LEAGUE1_TEAM_NAME || 'My Team',
+        teamId: process.env.LEAGUE1_TEAM_ID ? parseInt(process.env.LEAGUE1_TEAM_ID, 10) : null,
         active: true
       });
     }
@@ -89,6 +90,7 @@ class FantasyFootballApp {
         espnS2: process.env.LEAGUE2_ESPN_S2,
         SWID: process.env.LEAGUE2_SWID,
         teamName: process.env.LEAGUE2_TEAM_NAME || 'My Team',
+        teamId: process.env.LEAGUE2_TEAM_ID ? parseInt(process.env.LEAGUE2_TEAM_ID, 10) : null,
         active: true
       });
     }
