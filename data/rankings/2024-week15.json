@@ -1,0 +1,300 @@
+{
+  "week": 15,
+  "season": 2024,
+  "uploadedAt": "2025-09-18T18:42:49.364Z",
+  "positions": {
+    "QB": [
+      {
+        "name": "Josh Allen",
+        "team": "BUF",
+        "pos": "QB",
+        "rank": 1,
+        "tier": "1",
+        "notes": "Elite QB1"
+      },
+      {
+        "name": "Jalen Hurts",
+        "team": "PHI",
+        "pos": "QB",
+        "rank": 2,
+        "tier": "1",
+        "notes": "Rushing upside"
+      },
+      {
+        "name": "Patrick Mahomes",
+        "team": "KC",
+        "pos": "QB",
+        "rank": 3,
+        "tier": "1",
+        "notes": "Always elite"
+      },
+      {
+        "name": "Lamar Jackson",
+        "team": "BAL",
+        "pos": "QB",
+        "rank": 4,
+        "tier": "2",
+        "notes": "Dual threat"
+      },
+      {
+        "name": "Dak Prescott",
+        "team": "DAL",
+        "pos": "QB",
+        "rank": 5,
+        "tier": "2",
+        "notes": "High volume"
+      }
+    ],
+    "RB": [
+      {
+        "name": "Christian McCaffrey",
+        "team": "SF",
+        "pos": "RB",
+        "rank": 1,
+        "tier": "1",
+        "notes": "Overall RB1"
+      },
+      {
+        "name": "Austin Ekeler",
+        "team": "LAC",
+        "pos": "RB",
+        "rank": 2,
+        "tier": "1",
+        "notes": "PPR monster"
+      },
+      {
+        "name": "Saquon Barkley",
+        "team": "NYG",
+        "pos": "RB",
+        "rank": 3,
+        "tier": "1",
+        "notes": "Healthy and ready"
+      },
+      {
+        "name": "Derrick Henry",
+        "team": "TEN",
+        "pos": "RB",
+        "rank": 4,
+        "tier": "2",
+        "notes": "TD machine"
+      },
+      {
+        "name": "Nick Chubb",
+        "team": "CLE",
+        "pos": "RB",
+        "rank": 5,
+        "tier": "2",
+        "notes": "Consistent RB1"
+      }
+    ],
+    "WR": [
+      {
+        "name": "Tyreek Hill",
+        "team": "MIA",
+        "pos": "WR",
+        "rank": 1,
+        "tier": "1",
+        "notes": "Elite speed"
+      },
+      {
+        "name": "Stefon Diggs",
+        "team": "BUF",
+        "pos": "WR",
+        "rank": 2,
+        "tier": "1",
+        "notes": "Target monster"
+      },
+      {
+        "name": "Justin Jefferson",
+        "team": "MIN",
+        "pos": "WR",
+        "rank": 3,
+        "tier": "1",
+        "notes": "Young stud"
+      },
+      {
+        "name": "CeeDee Lamb",
+        "team": "DAL",
+        "pos": "WR",
+        "rank": 4,
+        "tier": "1",
+        "notes": "Volume king"
+      },
+      {
+        "name": "AJ Brown",
+        "team": "PHI",
+        "pos": "WR",
+        "rank": 5,
+        "tier": "2",
+        "notes": "Red zone target"
+      }
+    ],
+    "TE": [
+      {
+        "name": "Travis Kelce",
+        "team": "KC",
+        "pos": "TE",
+        "rank": 1,
+        "tier": "1",
+        "notes": "Elite TE"
+      },
+      {
+        "name": "Mark Andrews",
+        "team": "BAL",
+        "pos": "TE",
+        "rank": 2,
+        "tier": "2",
+        "notes": "Top target"
+      },
+      {
+        "name": "TJ Hockenson",
+        "team": "MIN",
+        "pos": "TE",
+        "rank": 3,
+        "tier": "2",
+        "notes": "Consistent"
+      },
+      {
+        "name": "George Kittle",
+        "team": "SF",
+        "pos": "TE",
+        "rank": 4,
+        "tier": "2",
+        "notes": "When healthy"
+      },
+      {
+        "name": "Dallas Goedert",
+        "team": "PHI",
+        "pos": "TE",
+        "rank": 5,
+        "tier": "3",
+        "notes": "Solid option"
+      }
+    ],
+    "FLEX": [
+      {
+        "name": "Christian McCaffrey",
+        "team": "SF",
+        "pos": "RB",
+        "rank": 1,
+        "notes": "Best FLEX"
+      },
+      {
+        "name": "Tyreek Hill",
+        "team": "MIA",
+        "pos": "WR",
+        "rank": 2,
+        "notes": "Elite WR"
+      },
+      {
+        "name": "Austin Ekeler",
+        "team": "LAC",
+        "pos": "RB",
+        "rank": 3,
+        "notes": "PPR value"
+      },
+      {
+        "name": "Stefon Diggs",
+        "team": "BUF",
+        "pos": "WR",
+        "rank": 4,
+        "notes": "High floor"
+      },
+      {
+        "name": "Saquon Barkley",
+        "team": "NYG",
+        "pos": "RB",
+        "rank": 5,
+        "notes": "RB1"
+      }
+    ],
+    "DST": [
+      {
+        "name": "49ers DST",
+        "team": "SF",
+        "pos": "DST",
+        "rank": 1,
+        "notes": "Elite defense"
+      },
+      {
+        "name": "Bills DST",
+        "team": "BUF",
+        "pos": "DST",
+        "rank": 2,
+        "notes": "Great matchup"
+      },
+      {
+        "name": "Cowboys DST",
+        "team": "DAL",
+        "pos": "DST",
+        "rank": 3,
+        "notes": "Turnovers"
+      },
+      {
+        "name": "Patriots DST",
+        "team": "NE",
+        "pos": "DST",
+        "rank": 4,
+        "notes": "Solid"
+      },
+      {
+        "name": "Jets DST",
+        "team": "NYJ",
+        "pos": "DST",
+        "rank": 5,
+        "notes": "Improving"
+      }
+    ],
+    "K": [
+      {
+        "name": "Justin Tucker",
+        "team": "BAL",
+        "pos": "K",
+        "rank": 1,
+        "notes": "Most accurate"
+      },
+      {
+        "name": "Daniel Carlson",
+        "team": "LV",
+        "pos": "K",
+        "rank": 2,
+        "notes": "High volume"
+      },
+      {
+        "name": "Harrison Butker",
+        "team": "KC",
+        "pos": "K",
+        "rank": 3,
+        "notes": "Great offense"
+      },
+      {
+        "name": "Tyler Bass",
+        "team": "BUF",
+        "pos": "K",
+        "rank": 4,
+        "notes": "Strong leg"
+      },
+      {
+        "name": "Evan McPherson",
+        "team": "CIN",
+        "pos": "K",
+        "rank": 5,
+        "notes": "Rising star"
+      }
+    ]
+  },
+  "metadata": {
+    "totalPlayers": 35,
+    "sheetsProcessed": [
+      "QB",
+      "RB",
+      "WR",
+      "TE",
+      "FLEX",
+      "DST",
+      "K"
+    ],
+    "errors": [],
+    "warnings": []
+  }
+}

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rankings Upload Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragging {
+            border-color: #667eea;
+            background-color: #f7f8ff;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        input[type="number"], select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weekly Rankings Upload</h1>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Drag and drop your XLSX file here</p>
+            <p style="font-size: 14px; color: #999;">or click to browse</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <strong>Selected file:</strong> <span id="fileName"></span>
+            (<span id="fileSize"></span>)
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="weekSelect">Week</label>
+                <input type="number" id="weekSelect" min="1" max="18" value="">
+            </div>
+            <div class="control-group">
+                <label for="seasonSelect">Season</label>
+                <input type="number" id="seasonSelect" min="2020" max="2030" value="">
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <button id="uploadBtn" disabled>Upload Rankings</button>
+            <button id="viewRankingsBtn">View Available Rankings</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px;">Processing file...</p>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <h2>Results</h2>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Set default week and season
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const seasonStart = new Date(currentYear, 8, 1); // Sept 1
+        const weeksSinceStart = Math.floor((currentDate - seasonStart) / (7 * 24 * 60 * 60 * 1000));
+        const currentWeek = Math.min(Math.max(weeksSinceStart + 1, 1), 18);
+
+        document.getElementById('weekSelect').value = currentWeek;
+        document.getElementById('seasonSelect').value = currentYear;
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const viewRankingsBtn = document.getElementById('viewRankingsBtn');
+        const results = document.getElementById('results');
+        const resultContent = document.getElementById('resultContent');
+        const loading = document.getElementById('loading');
+
+        let selectedFile = null;
+
+        // Click to browse
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            handleFileSelection(e.target.files[0]);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            if (!file) return;
+
+            // Validate file type
+            const validTypes = [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-excel',
+                'text/csv'
+            ];
+
+            const validExtensions = ['.xlsx', '.xls', '.csv'];
+            const hasValidExtension = validExtensions.some(ext =>
+                file.name.toLowerCase().endsWith(ext)
+            );
+
+            if (!validTypes.includes(file.type) && !hasValidExtension) {
+                alert('Please select a valid XLSX or CSV file');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            uploadBtn.disabled = false;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Upload button click
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('week', document.getElementById('weekSelect').value);
+            formData.append('season', document.getElementById('seasonSelect').value);
+
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            uploadBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/rankings/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySuccess(data.data);
+                } else {
+                    displayError(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                uploadBtn.disabled = false;
+            }
+        });
+
+        // View rankings button
+        viewRankingsBtn.addEventListener('click', async () => {
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/rankings/available');
+                const data = await response.json();
+
+                if (data.success) {
+                    displayAvailableRankings(data.data);
+                } else {
+                    displayError(data.error || 'Failed to fetch rankings');
+                }
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        function displaySuccess(data) {
+            results.style.display = 'block';
+
+            let html = '<div class="success">Rankings uploaded successfully!</div>';
+
+            html += '<div class="stats">';
+            html += `<div class="stat-card">
+                        <div class="stat-value">${data.totalPlayers}</div>
+                        <div class="stat-label">Total Players</div>
+                     </div>`;
+            html += `<div class="stat-card">
+                        <div class="stat-value">${data.week}</div>
+                        <div class="stat-label">Week</div>
+                     </div>`;
+            html += `<div class="stat-card">
+                        <div class="stat-value">${data.season}</div>
+                        <div class="stat-label">Season</div>
+                     </div>`;
+            html += `<div class="stat-card">
+                        <div class="stat-value">${data.sheetsProcessed.length}</div>
+                        <div class="stat-label">Sheets Processed</div>
+                     </div>`;
+            html += '</div>';
+
+            if (data.sheetsProcessed && data.sheetsProcessed.length > 0) {
+                html += '<h3 style="margin-top: 20px;">Processed Positions</h3>';
+                html += '<p>' + data.sheetsProcessed.join(', ') + '</p>';
+            }
+
+            if (data.warnings && data.warnings.length > 0) {
+                html += '<h3 style="margin-top: 20px; color: #856404;">Warnings</h3>';
+                html += '<ul>';
+                data.warnings.forEach(warning => {
+                    html += `<li>${warning}</li>`;
+                });
+                html += '</ul>';
+            }
+
+            resultContent.innerHTML = html;
+        }
+
+        function displayError(error) {
+            results.style.display = 'block';
+            resultContent.innerHTML = `<div class="error">Error: ${error}</div>`;
+        }
+
+        function displayAvailableRankings(rankings) {
+            results.style.display = 'block';
+
+            if (rankings.length === 0) {
+                resultContent.innerHTML = '<p>No rankings available yet. Upload your first rankings file!</p>';
+                return;
+            }
+
+            let html = '<h3>Available Rankings</h3>';
+            html += '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+            html += '<thead><tr style="background: #f8f9fa;">';
+            html += '<th style="padding: 10px; text-align: left;">Season</th>';
+            html += '<th style="padding: 10px; text-align: left;">Week</th>';
+            html += '<th style="padding: 10px; text-align: left;">Actions</th>';
+            html += '</tr></thead><tbody>';
+
+            rankings.forEach(ranking => {
+                html += '<tr style="border-bottom: 1px solid #ddd;">';
+                html += `<td style="padding: 10px;">${ranking.season}</td>`;
+                html += `<td style="padding: 10px;">Week ${ranking.week}</td>`;
+                html += `<td style="padding: 10px;">
+                            <button onclick="viewRankingDetails(${ranking.week}, ${ranking.season})"
+                                    style="padding: 5px 10px; font-size: 14px;">View</button>
+                            <button onclick="deleteRanking(${ranking.week}, ${ranking.season})"
+                                    style="padding: 5px 10px; font-size: 14px; background: #dc3545;">Delete</button>
+                         </td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            resultContent.innerHTML = html;
+        }
+
+        // Global functions for button clicks
+        window.viewRankingDetails = async function(week, season) {
+            try {
+                const response = await fetch(`/api/rankings?week=${week}&season=${season}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const rankings = data.data;
+                    let html = `<h3>Rankings for Week ${week}, Season ${season}</h3>`;
+                    html += '<pre>' + JSON.stringify(rankings.positions, null, 2) + '</pre>';
+                    resultContent.innerHTML = html;
+                } else {
+                    displayError(data.error);
+                }
+            } catch (error) {
+                displayError('Failed to fetch ranking details');
+            }
+        };
+
+        window.deleteRanking = async function(week, season) {
+            if (!confirm(`Delete rankings for Week ${week}, Season ${season}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/rankings?week=${week}&season=${season}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Rankings deleted successfully');
+                    viewRankingsBtn.click(); // Refresh the list
+                } else {
+                    displayError(data.error);
+                }
+            } catch (error) {
+                displayError('Failed to delete rankings');
+            }
+        };
+    </script>
+</body>
+</html>
