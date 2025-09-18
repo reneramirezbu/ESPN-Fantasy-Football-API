@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:*;">
     <title>Fantasy Football Dashboard</title>
     <style>
         :root {
@@ -258,6 +259,163 @@
             color: var(--text-primary);
         }
 
+        /* Upload Section Styles */
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: var(--background-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #4f46e5;
+            background: #f9fafb;
+        }
+
+        .upload-area.dragging {
+            background: #ede9fe;
+            border-color: #4f46e5;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .upload-subtext {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            background: var(--background-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .file-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .file-size {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .upload-btn {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upload-progress {
+            background: var(--background-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: var(--success-color);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #a7f3d0;
+            margin-bottom: 16px;
+        }
+
+        .success-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .week-selector {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .selector-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selector-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .selector-input {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
         @media (max-width: 768px) {
             .roster-table {
                 font-size: 0.875rem;
@@ -275,6 +433,14 @@
             .team-stats {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .upload-area {
+                padding: 30px 20px;
+            }
+
+            .week-selector {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -289,6 +455,56 @@
     </div>
 
     <div class="container">
+        <!-- Upload Rankings Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Upload Rankings</h2>
+            </div>
+
+            <div class="week-selector">
+                <div class="selector-group">
+                    <label class="selector-label">Week:</label>
+                    <select id="weekSelect" class="selector-input">
+                        <option value="1">Week 1</option>
+                        <option value="2">Week 2</option>
+                        <option value="3">Week 3</option>
+                        <option value="4">Week 4</option>
+                        <option value="5">Week 5</option>
+                        <option value="6">Week 6</option>
+                        <option value="7">Week 7</option>
+                        <option value="8">Week 8</option>
+                        <option value="9">Week 9</option>
+                        <option value="10">Week 10</option>
+                        <option value="11">Week 11</option>
+                        <option value="12">Week 12</option>
+                        <option value="13">Week 13</option>
+                        <option value="14">Week 14</option>
+                        <option value="15">Week 15</option>
+                        <option value="16">Week 16</option>
+                        <option value="17">Week 17</option>
+                        <option value="18">Week 18</option>
+                    </select>
+                </div>
+                <div class="selector-group">
+                    <label class="selector-label">Season:</label>
+                    <select id="seasonSelect" class="selector-input">
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Click to upload rankings file</div>
+                <div class="upload-subtext">or drag and drop (XLSX, XLS, CSV)</div>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv">
+            </div>
+
+            <div id="uploadStatus"></div>
+        </div>
+
+        <!-- My Team Section -->
         <div class="section">
             <div class="section-header">
                 <h2>My Team</h2>
@@ -307,6 +523,9 @@
     </div>
 
     <script>
+    (function() {
+        'use strict';
+
         // Function to fetch roster data
         async function fetchRoster() {
             const contentDiv = document.getElementById('content');
@@ -421,8 +640,232 @@
             `;
         }
 
-        // Fetch roster on page load
-        window.addEventListener('DOMContentLoaded', fetchRoster);
+        // File upload functionality
+        let selectedFile = null;
+
+        // Set current week and season on page load
+        function setCurrentWeekAndSeason() {
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+
+            // Set season
+            document.getElementById('seasonSelect').value = currentYear;
+
+            // Calculate approximate NFL week (rough estimate)
+            const seasonStart = new Date(currentYear, 8, 1); // September 1st
+            const weeksSinceStart = Math.floor((currentDate - seasonStart) / (7 * 24 * 60 * 60 * 1000));
+            const estimatedWeek = Math.min(Math.max(1, weeksSinceStart - 1), 18);
+            document.getElementById('weekSelect').value = estimatedWeek;
+        }
+
+        // Handle file selection
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelection(file);
+            }
+        });
+
+        // Handle drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragging');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (isValidFileType(file)) {
+                    handleFileSelection(file);
+                } else {
+                    showError('Please upload a valid file (XLSX, XLS, or CSV)');
+                }
+            }
+        });
+
+        function isValidFileType(file) {
+            const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                              'application/vnd.ms-excel',
+                              'text/csv'];
+            return validTypes.includes(file.type) ||
+                   file.name.match(/\.(xlsx|xls|csv)$/i);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function handleFileSelection(file) {
+            if (!isValidFileType(file)) {
+                showError('Please upload a valid file (XLSX, XLS, or CSV)');
+                return;
+            }
+
+            // Validate file size (10MB limit)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                showError('File size must be less than 10MB');
+                return;
+            }
+
+            selectedFile = file;
+            const statusDiv = document.getElementById('uploadStatus');
+
+            statusDiv.innerHTML = `
+                <div class="file-info">
+                    <div class="file-details">
+                        <div class="file-icon">📄</div>
+                        <div>
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <button class="upload-btn" onclick="uploadFile()">Upload</button>
+                </div>
+            `;
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+
+            const statusDiv = document.getElementById('uploadStatus');
+            const week = document.getElementById('weekSelect').value;
+            const season = document.getElementById('seasonSelect').value;
+
+            // Create progress UI safely
+            const progressDiv = document.createElement('div');
+            progressDiv.className = 'upload-progress';
+
+            const progressText = document.createElement('div');
+            progressText.textContent = `Uploading rankings for Week ${week}, Season ${season}...`;
+
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+
+            const progressFill = document.createElement('div');
+            progressFill.className = 'progress-fill';
+            progressFill.style.width = '0%';
+
+            progressBar.appendChild(progressFill);
+            progressDiv.appendChild(progressText);
+            progressDiv.appendChild(progressBar);
+
+            statusDiv.innerHTML = '';
+            statusDiv.appendChild(progressDiv);
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('week', week);
+            formData.append('season', season);
+
+            try {
+                const apiUrl = window.location.hostname === 'localhost'
+                    ? 'http://localhost:3001/api/rankings/upload'
+                    : '/api/rankings/upload';
+
+                // Use XMLHttpRequest for real progress tracking
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressFill.style.width = percentComplete + '%';
+                    }
+                });
+
+                xhr.addEventListener('load', function() {
+                    if (xhr.status === 200) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data.success) {
+                            showSuccess(data);
+                            // Reset file input
+                            selectedFile = null;
+                            document.getElementById('fileInput').value = '';
+                        } else {
+                            showError(data.error || 'Upload failed');
+                        }
+                    } else {
+                        showError('Upload failed with status: ' + xhr.status);
+                    }
+                });
+
+                xhr.addEventListener('error', function() {
+                    showError('Network error occurred during upload');
+                });
+
+                xhr.open('POST', apiUrl, true);
+                xhr.send(formData);
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function showSuccess(data) {
+            const statusDiv = document.getElementById('uploadStatus');
+
+            // Create elements safely to prevent XSS
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'success-title';
+            titleDiv.textContent = '✅ Rankings uploaded successfully!';
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.textContent = `Processed ${data.totalPlayers || 0} players from ${data.sheetsProcessed?.length || 0} positions`;
+
+            successDiv.appendChild(titleDiv);
+            successDiv.appendChild(detailsDiv);
+
+            statusDiv.innerHTML = '';
+            statusDiv.appendChild(successDiv);
+        }
+
+        function showError(message) {
+            const statusDiv = document.getElementById('uploadStatus');
+
+            // Create elements safely to prevent XSS
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'error-title';
+            titleDiv.textContent = 'Upload Error';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = message; // Using textContent prevents XSS
+
+            errorDiv.appendChild(titleDiv);
+            errorDiv.appendChild(messageDiv);
+
+            statusDiv.innerHTML = '';
+            statusDiv.appendChild(errorDiv);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            fetchRoster();
+            setCurrentWeekAndSeason();
+        });
+
+        // Expose necessary functions to global scope for onclick handlers
+        window.fetchRoster = fetchRoster;
+        window.uploadFile = uploadFile;
+    })();
     </script>
 </body>
 </html>
