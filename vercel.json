@@ -2,6 +2,18 @@
   "functions": {
     "api/roster.js": {
       "maxDuration": 10
+    },
+    "api/rankings/upload.js": {
+      "maxDuration": 30
+    },
+    "api/rankings/index.js": {
+      "maxDuration": 10
+    },
+    "api/rankings/available.js": {
+      "maxDuration": 10
+    },
+    "api/rankings/match.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

@@ -60,6 +60,7 @@
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "formidable": "^3.5.4",
     "fuse.js": "^7.1.0",
     "lodash": "^4.17.21",
     "multer": "^2.0.2",
