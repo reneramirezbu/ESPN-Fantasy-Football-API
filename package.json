@@ -26,6 +26,7 @@
     "clean:dist": "rm -rf web.js web.js.map node.js node.js.map web-dev.js web-dev.js.map node-dev.js node-dev.js.map",
     "clean:docs": "rm -rf docs",
     "ci": "npm run clean && npm run lint && npm run test && npm run build && npm run build:docs",
+    "dev": "vercel dev",
     "lint": "npm run lint:js && npm run lint:spelling",
     "lint:js": "eslint integration-tests/**/*.js src/**/*.js --cache",
     "lint:spelling": "cspell integration-tests/**/*.js src/**/*.js --quiet --cache",
@@ -56,7 +57,8 @@
   ],
   "dependencies": {
     "axios": "^1.6.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.23.2",

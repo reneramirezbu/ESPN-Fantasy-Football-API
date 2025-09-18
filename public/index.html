@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Football Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --background-color: #f3f4f6;
+            --card-background: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .football-icon {
+            font-size: 1.5rem;
+        }
+
+        .section {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .team-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .roster-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .roster-table th {
+            background: var(--background-color);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .roster-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .roster-table tr:hover {
+            background: var(--background-color);
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .position-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .injury-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .injury-Q {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .injury-D {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .injury-O {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .injury-IR {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fef2f2;
+            color: var(--error-color);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #fee2e2;
+        }
+
+        .error-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .lineup-slot {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .lineup-slot.starting {
+            color: var(--success-color);
+        }
+
+        .points {
+            font-weight: 600;
+        }
+
+        .points.projected {
+            color: var(--text-secondary);
+        }
+
+        .points.actual {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .roster-table {
+                font-size: 0.875rem;
+            }
+
+            .roster-table th,
+            .roster-table td {
+                padding: 8px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .team-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>
+                <span class="football-icon">🏈</span>
+                Fantasy Football Dashboard
+            </h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <div class="section-header">
+                <h2>My Team</h2>
+                <button class="refresh-btn" onclick="fetchRoster()">
+                    <span>↻</span> Refresh
+                </button>
+            </div>
+
+            <div id="content">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading roster data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch roster data
+        async function fetchRoster() {
+            const contentDiv = document.getElementById('content');
+            const refreshBtn = document.querySelector('.refresh-btn');
+
+            // Show loading state
+            contentDiv.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading roster data...</p>
+                </div>
+            `;
+            refreshBtn.disabled = true;
+
+            try {
+                // Determine API URL based on environment
+                const apiUrl = window.location.hostname === 'localhost'
+                    ? 'http://localhost:3001/api/roster'
+                    : '/api/roster';
+
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch roster');
+                }
+
+                if (data.success && data.team) {
+                    displayRoster(data.team);
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <div class="error-title">Error Loading Roster</div>
+                        <div>${error.message}</div>
+                    </div>
+                `;
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // Function to display roster data
+        function displayRoster(team) {
+            const contentDiv = document.getElementById('content');
+
+            // Sort roster by lineup slot order
+            const slotOrder = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K', 'BENCH', 'IR'];
+            const sortedRoster = [...team.roster].sort((a, b) => {
+                return slotOrder.indexOf(a.lineupSlot) - slotOrder.indexOf(b.lineupSlot);
+            });
+
+            contentDiv.innerHTML = `
+                <div class="team-stats">
+                    <div class="stat-card">
+                        <div class="stat-label">Record</div>
+                        <div class="stat-value">${team.record.wins}-${team.record.losses}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Points For</div>
+                        <div class="stat-value">${team.record.pointsFor}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Points Against</div>
+                        <div class="stat-value">${team.record.pointsAgainst}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Team</div>
+                        <div class="stat-value">${team.name}</div>
+                    </div>
+                </div>
+
+                <table class="roster-table">
+                    <thead>
+                        <tr>
+                            <th>Slot</th>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>Team</th>
+                            <th>Projected</th>
+                            <th>Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedRoster.map(player => `
+                            <tr>
+                                <td>
+                                    <span class="lineup-slot ${['BENCH', 'IR'].includes(player.lineupSlot) ? '' : 'starting'}">
+                                        ${player.lineupSlot}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="player-name">${player.fullName}</span>
+                                    ${player.injuryStatus ? `<span class="injury-badge injury-${player.injuryStatus}">${player.injuryStatus}</span>` : ''}
+                                </td>
+                                <td>
+                                    <span class="position-badge">${player.position}</span>
+                                </td>
+                                <td>${player.proTeam}</td>
+                                <td>
+                                    <span class="points projected">${player.projectedPoints}</span>
+                                </td>
+                                <td>
+                                    <span class="points actual">${player.actualPoints}</span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Fetch roster on page load
+        window.addEventListener('DOMContentLoaded', fetchRoster);
+    </script>
+</body>
+</html>

@@ -18,6 +18,8 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.local
+env.local
 
 .DS_Store
 
@@ -26,3 +28,10 @@ web-dev.js*
 node.js*
 node-dev.js*
 *.map
+
+# Personal test files
+get_roster.py
+test-static-assets.sh
+
+# Vercel
+.vercel
