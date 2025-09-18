@@ -6,13 +6,8 @@ import {
   Typography,
   AppBar,
   Toolbar,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
+  Tabs,
+  Tab,
   CssBaseline,
   ThemeProvider,
   createTheme,
@@ -20,13 +15,13 @@ import {
   Stack,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
   Upload as UploadIcon,
   TableChart as TableIcon,
   Settings as SettingsIcon,
   Delete as DeleteIcon,
   Compare as CompareIcon,
   Groups as TeamIcon,
+  SportsFootball as FootballIcon,
 } from '@mui/icons-material';
 import { RankingsProvider, useRankings } from './context/RankingsContext';
 import FileUpload from './components/FileUpload';
@@ -50,8 +45,7 @@ const theme = createTheme({
 });
 
 const MainContent = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('rankings');
+  const [currentTab, setCurrentTab] = useState(0);
   const [nameResolverOpen, setNameResolverOpen] = useState(false);
   const {
     rankings,
@@ -69,100 +63,87 @@ const MainContent = () => {
     }
   };
 
-  const menuItems = [
-    { text: 'My Team', icon: <TeamIcon />, view: 'myteam' },
-    { text: 'Rankings', icon: <TableIcon />, view: 'rankings' },
-    { text: 'Upload', icon: <UploadIcon />, view: 'upload' },
-    { text: 'Compare Weeks', icon: <CompareIcon />, view: 'compare' },
-    { text: 'Settings', icon: <SettingsIcon />, view: 'settings' },
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+  };
+
+  const tabs = [
+    { label: 'My Team', icon: <TeamIcon /> },
+    { label: 'Rankings', icon: <TableIcon /> },
+    { label: 'Upload', icon: <UploadIcon /> },
+    { label: 'Optimize', icon: <FootballIcon /> },
   ];
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <CssBaseline />
 
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar position="fixed">
         <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={() => setDrawerOpen(!drawerOpen)}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
+          <FootballIcon sx={{ mr: 2 }} />
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Fantasy Football Rankings Manager
+            Fantasy Football Dashboard
           </Typography>
           <WeekSelector />
         </Toolbar>
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          textColor="inherit"
+          indicatorColor="secondary"
+          sx={{ bgcolor: 'primary.dark' }}
+        >
+          {tabs.map((tab, index) => (
+            <Tab
+              key={index}
+              label={tab.label}
+              icon={tab.icon}
+              iconPosition="start"
+              sx={{ minHeight: 48 }}
+            />
+          ))}
+        </Tabs>
       </AppBar>
 
-      <Drawer
-        variant="temporary"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        sx={{
-          width: 240,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: 240,
-            boxSizing: 'border-box',
-          },
-        }}
-      >
-        <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
-          <List>
-            {menuItems.map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => {
-                  setCurrentView(item.view);
-                  setDrawerOpen(false);
-                }}
-                selected={currentView === item.view}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
-          <Divider />
-          <List>
-            <ListItem
-              button
-              onClick={() => setNameResolverOpen(true)}
-            >
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary="Name Resolver" />
-            </ListItem>
-            {rankings && (
-              <ListItem
-                button
-                onClick={handleDeleteCurrent}
-              >
-                <ListItemIcon>
-                  <DeleteIcon />
-                </ListItemIcon>
-                <ListItemText primary="Delete Current" />
-              </ListItem>
-            )}
-          </List>
-        </Box>
-      </Drawer>
-
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
+      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: '112px' }}>
         <Container maxWidth="xl">
-          {currentView === 'myteam' && (
-            <MyTeam />
+          {currentTab === 0 && <MyTeam />}
+
+          {currentTab === 1 && (
+            <>
+              <Paper sx={{ p: 3, mb: 3 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h5">
+                    Week {currentWeek} Rankings
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    {rankings && (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleDeleteCurrent}
+                      >
+                        Delete Rankings
+                      </Button>
+                    )}
+                    {!rankings && availableRankings.length === 0 && (
+                      <Button
+                        variant="contained"
+                        startIcon={<UploadIcon />}
+                        onClick={() => setCurrentTab(2)}
+                      >
+                        Upload First Rankings
+                      </Button>
+                    )}
+                  </Stack>
+                </Stack>
+              </Paper>
+              <RankingsTable />
+            </>
           )}
 
-          {currentView === 'upload' && (
+          {currentTab === 2 && (
             <Paper sx={{ p: 3, mb: 3 }}>
               <Typography variant="h5" gutterBottom>
                 Upload Rankings
@@ -171,47 +152,16 @@ const MainContent = () => {
             </Paper>
           )}
 
-          {currentView === 'rankings' && (
-            <>
-              <Paper sx={{ p: 3, mb: 3 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h5">
-                    Week {currentWeek} Rankings
-                  </Typography>
-                  {!rankings && availableRankings.length === 0 && (
-                    <Button
-                      variant="contained"
-                      startIcon={<UploadIcon />}
-                      onClick={() => setCurrentView('upload')}
-                    >
-                      Upload First Rankings
-                    </Button>
-                  )}
-                </Stack>
-              </Paper>
-              <RankingsTable />
-            </>
-          )}
-
-          {currentView === 'compare' && (
+          {currentTab === 3 && (
             <Paper sx={{ p: 3 }}>
               <Typography variant="h5" gutterBottom>
-                Compare Weeks
+                Lineup Optimizer
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Week comparison feature coming soon. This will allow you to see rank changes
-                between multiple weeks.
+              <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
+                The optimizer will help you set your best lineup based on weekly rankings.
               </Typography>
-            </Paper>
-          )}
-
-          {currentView === 'settings' && (
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                Settings
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Configure your ESPN league settings and name mappings here.
+              <Typography variant="body2" color="primary">
+                Coming in Phase 3: Automatic lineup optimization based on rankings
               </Typography>
             </Paper>
           )}
