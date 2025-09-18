@@ -745,6 +745,18 @@
             const week = document.getElementById('weekSelect').value;
             const season = document.getElementById('seasonSelect').value;
 
+            // Debug logging
+            console.log('Upload Debug Info:', {
+                file: selectedFile.name,
+                fileSize: selectedFile.size,
+                fileType: selectedFile.type,
+                week: week,
+                season: season,
+                hostname: window.location.hostname,
+                port: window.location.port,
+                protocol: window.location.protocol
+            });
+
             // Create progress UI safely
             const progressDiv = document.createElement('div');
             progressDiv.className = 'upload-progress';
@@ -776,6 +788,12 @@
                     ? 'http://localhost:3001/api/rankings/upload'
                     : '/api/rankings/upload';
 
+                console.log('API URL:', apiUrl);
+                console.log('FormData entries:');
+                for (let pair of formData.entries()) {
+                    console.log('  ', pair[0] + ':', pair[1]);
+                }
+
                 // Use XMLHttpRequest for real progress tracking
                 const xhr = new XMLHttpRequest();
 
@@ -787,29 +805,43 @@
                 });
 
                 xhr.addEventListener('load', function() {
+                    console.log('Response Status:', xhr.status);
+                    console.log('Response Headers:', xhr.getAllResponseHeaders());
+                    console.log('Response Text:', xhr.responseText);
+
                     if (xhr.status === 200) {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data.success) {
-                            showSuccess(data);
-                            // Reset file input
-                            selectedFile = null;
-                            document.getElementById('fileInput').value = '';
-                        } else {
-                            showError(data.error || 'Upload failed');
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data.success) {
+                                showSuccess(data);
+                                // Reset file input
+                                selectedFile = null;
+                                document.getElementById('fileInput').value = '';
+                            } else {
+                                console.error('Upload failed:', data);
+                                showError(data.error || 'Upload failed');
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse response:', e);
+                            showError('Invalid response from server');
                         }
                     } else {
+                        console.error('HTTP Error:', xhr.status, xhr.statusText);
                         showError('Upload failed with status: ' + xhr.status);
                     }
                 });
 
                 xhr.addEventListener('error', function() {
+                    console.error('XHR Error:', xhr);
                     showError('Network error occurred during upload');
                 });
 
                 xhr.open('POST', apiUrl, true);
+                console.log('Sending request to:', apiUrl);
                 xhr.send(formData);
 
             } catch (error) {
+                console.error('Upload error:', error);
                 showError(error.message);
             }
         }

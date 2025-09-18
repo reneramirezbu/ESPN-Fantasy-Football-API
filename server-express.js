@@ -25,14 +25,25 @@ dotenv.config({ path: '.env.local' });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  if (req.method === 'POST') {
+    console.log('Headers:', req.headers.origin, req.headers['content-type']);
+  }
+  next();
+});
+
 // Middleware
 app.use(cors({
-  origin: [
-    'https://espn-fantasy-football-api.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001'
-  ],
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow all origins for debugging
+    console.log('[CORS] Origin:', origin);
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
@@ -174,8 +185,16 @@ app.get('/api/roster', async (req, res) => {
 // Rankings API Routes
 // ====================
 
-// Upload rankings (with validation)
-app.post('/api/rankings/upload', validateUploadBody, RankingsAPI.uploadRankings);
+// Debug middleware for upload endpoint
+app.post('/api/rankings/upload', (req, res, next) => {
+  console.log('[Upload] Request received at /api/rankings/upload');
+  console.log('[Upload] Headers:', {
+    origin: req.headers.origin,
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length']
+  });
+  next();
+}, validateUploadBody, RankingsAPI.uploadRankings);
 
 // Get rankings (with validation)
 app.get('/api/rankings', validateRankingsQuery, RankingsAPI.getRankings);
@@ -239,9 +258,13 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
+  console.log('[404] Not found:', req.method, req.path);
+  console.log('[404] Available routes:', app._router.stack.filter(r => r.route).map(r => `${Object.keys(r.route.methods)[0].toUpperCase()} ${r.route.path}`));
   res.status(404).json({
     success: false,
-    error: 'Endpoint not found'
+    error: 'Endpoint not found',
+    path: req.path,
+    method: req.method
   });
 });
 

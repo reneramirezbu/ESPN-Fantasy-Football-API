@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Debug Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        #output {
+            background: #2d2d2d;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .info { color: #9cdcfe; }
+        .warn { color: #dcdcaa; }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Upload Debug Test</h1>
+        <p>This page tests the upload endpoint with extensive debugging</p>
+
+        <div>
+            <label>Select Weekly Rankings file:</label><br>
+            <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </div>
+
+        <button onclick="testUpload()">Test Upload to Port 3001</button>
+        <button onclick="clearOutput()">Clear Output</button>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const className = type;
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+            log('Output cleared', 'info');
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                log('ERROR: No file selected', 'error');
+                return;
+            }
+
+            log('=== UPLOAD TEST STARTED ===', 'success');
+            log(`File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+            log(`Type: ${file.type || 'unknown'}`, 'info');
+
+            // Test server availability first
+            log('\n1. Testing server availability...', 'warn');
+            try {
+                const healthResponse = await fetch('http://localhost:3001/health');
+                const healthData = await healthResponse.json();
+                log(`✓ Server is running: ${JSON.stringify(healthData)}`, 'success');
+            } catch (error) {
+                log(`✗ Server health check failed: ${error.message}`, 'error');
+                log('Make sure the server is running on port 3001', 'error');
+                return;
+            }
+
+            // Prepare upload
+            log('\n2. Preparing upload...', 'warn');
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('week', '17');
+            formData.append('season', '2024');
+
+            log('FormData prepared with:', 'info');
+            for (let [key, value] of formData.entries()) {
+                log(`  ${key}: ${value instanceof File ? value.name : value}`, 'info');
+            }
+
+            // Attempt upload
+            log('\n3. Sending POST request to /api/rankings/upload...', 'warn');
+            const uploadUrl = 'http://localhost:3001/api/rankings/upload';
+            log(`URL: ${uploadUrl}`, 'info');
+
+            try {
+                const xhr = new XMLHttpRequest();
+
+                // Set up event listeners
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = Math.round((e.loaded / e.total) * 100);
+                        log(`Upload progress: ${percentComplete}%`, 'info');
+                    }
+                });
+
+                xhr.addEventListener('loadstart', () => {
+                    log('Request started...', 'info');
+                });
+
+                xhr.addEventListener('load', () => {
+                    log(`\n4. Response received:`, 'warn');
+                    log(`Status: ${xhr.status} ${xhr.statusText}`, xhr.status === 200 ? 'success' : 'error');
+                    log(`Headers:\n${xhr.getAllResponseHeaders()}`, 'info');
+
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        log(`\nResponse Body:`, 'warn');
+                        log(JSON.stringify(response, null, 2), response.success ? 'success' : 'error');
+
+                        if (response.success) {
+                            log('\n✅ UPLOAD SUCCESSFUL!', 'success');
+                        } else {
+                            log('\n❌ UPLOAD FAILED', 'error');
+                        }
+                    } catch (e) {
+                        log(`Failed to parse response: ${xhr.responseText}`, 'error');
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    log('\n❌ Network error occurred', 'error');
+                    log('Check browser console for details', 'error');
+                });
+
+                xhr.addEventListener('abort', () => {
+                    log('Request aborted', 'warn');
+                });
+
+                xhr.open('POST', uploadUrl, true);
+                xhr.send(formData);
+
+            } catch (error) {
+                log(`\n❌ Error during upload: ${error.message}`, 'error');
+                log(error.stack, 'error');
+            }
+        }
+
+        // Initial message
+        log('Debug console ready. Select a file and click "Test Upload"', 'success');
+        log('Make sure server is running on port 3001', 'info');
+    </script>
+</body>
+</html>
