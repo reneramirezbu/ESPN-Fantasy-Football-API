@@ -114,8 +114,22 @@ class XLSXParser {
     Object.keys(firstRow).forEach(key => {
       const normalizedKey = key.toLowerCase().trim();
 
-      // Map variations to standard names
-      if (normalizedKey.includes('player') || normalizedKey.includes('name')) {
+      // Handle Weekly Rankings format
+      if (key === '#') {
+        headers.rank = key;  // Weekly rank
+      } else if (key === 'Player (team)') {
+        headers.playerWithTeam = key;  // Contains both player name and team
+      } else if (key === 'Matchup') {
+        headers.matchup = key;
+      } else if (key === 'ECR™' || key === 'ECR') {
+        headers.ecr = key;  // Rest of season rank
+      } else if (key === 'vs. ECR') {
+        headers.vsEcr = key;
+      } else if (key === 'Pos') {
+        headers.pos = key;  // Position (in FLEX sheet)
+      }
+      // Map variations to standard names (fallback for other formats)
+      else if (normalizedKey.includes('player') || normalizedKey.includes('name')) {
         headers.player = key;
       } else if (normalizedKey.includes('team') && !normalizedKey.includes('bye')) {
         headers.team = key;
@@ -139,36 +153,79 @@ class XLSXParser {
    * Extract player data from a row
    */
   extractPlayerData(row, headers, expectedPosition) {
-    if (!headers.player || !row[headers.player]) {
-      return null; // Skip empty rows
+    // Handle Weekly Rankings format
+    if (headers.playerWithTeam && row[headers.playerWithTeam]) {
+      const playerWithTeam = row[headers.playerWithTeam];
+      // Extract player name and team from "Player Name (TEAM)" format
+      const match = playerWithTeam.match(/^(.+?)\s*\(([A-Z]+)\)$/);
+
+      if (!match) {
+        return null; // Skip if can't parse
+      }
+
+      const playerName = this.cleanPlayerName(match[1]);
+      const team = this.normalizeTeam(match[2]);
+      const weeklyRank = headers.rank ? parseInt(row[headers.rank], 10) : null;
+      const rosRank = headers.ecr ? parseInt(row[headers.ecr], 10) : null;
+      const matchup = headers.matchup ? row[headers.matchup] : null;
+      const vsEcr = headers.vsEcr ? parseInt(row[headers.vsEcr], 10) : null;
+
+      // For FLEX sheet, position is in a separate column
+      let position = expectedPosition;
+      if (headers.pos && row[headers.pos]) {
+        // Extract position from "RB1", "WR12", etc.
+        const posMatch = row[headers.pos].match(/^([A-Z]+)/);
+        if (posMatch) {
+          position = posMatch[1];
+        }
+      }
+
+      // Validate required fields
+      if (!playerName || !weeklyRank || isNaN(weeklyRank)) {
+        throw new Error(`Missing required fields: player="${playerName}", rank="${weeklyRank}"`);
+      }
+
+      return {
+        name: playerName,
+        team: team,
+        pos: position,
+        rank: weeklyRank,        // Weekly rank (#)
+        rosRank: rosRank,        // Rest of season rank (ECR™)
+        matchup: matchup,
+        vsEcr: vsEcr
+      };
+    }
+    // Handle standard format (fallback)
+    else if (headers.player && row[headers.player]) {
+      const playerName = this.cleanPlayerName(row[headers.player]);
+      const team = headers.team ? this.normalizeTeam(row[headers.team]) : null;
+      const position = headers.pos ? row[headers.pos] : expectedPosition;
+      const rank = headers.rank ? parseInt(row[headers.rank], 10) : null;
+
+      // Validate required fields
+      if (!playerName || !rank || isNaN(rank)) {
+        throw new Error(`Missing required fields: player="${playerName}", rank="${rank}"`);
+      }
+
+      const playerData = {
+        name: playerName,
+        team: team,
+        pos: position,
+        rank: rank
+      };
+
+      // Add optional fields if present
+      if (headers.tier && row[headers.tier]) {
+        playerData.tier = row[headers.tier];
+      }
+      if (headers.notes && row[headers.notes]) {
+        playerData.notes = row[headers.notes];
+      }
+
+      return playerData;
     }
 
-    const playerName = this.cleanPlayerName(row[headers.player]);
-    const team = headers.team ? this.normalizeTeam(row[headers.team]) : null;
-    const position = headers.pos ? row[headers.pos] : expectedPosition;
-    const rank = headers.rank ? parseInt(row[headers.rank], 10) : null;
-
-    // Validate required fields
-    if (!playerName || !rank || isNaN(rank)) {
-      throw new Error(`Missing required fields: player="${playerName}", rank="${rank}"`);
-    }
-
-    const playerData = {
-      name: playerName,
-      team: team,
-      pos: position,
-      rank: rank
-    };
-
-    // Add optional fields if present
-    if (headers.tier && row[headers.tier]) {
-      playerData.tier = row[headers.tier];
-    }
-    if (headers.notes && row[headers.notes]) {
-      playerData.notes = row[headers.notes];
-    }
-
-    return playerData;
+    return null; // Skip empty rows
   }
 
   /**

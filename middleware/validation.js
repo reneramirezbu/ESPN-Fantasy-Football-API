@@ -109,6 +109,11 @@ const validateCompareQuery = (req, res, next) => {
  * Validate upload body parameters
  */
 const validateUploadBody = (req, res, next) => {
+  // Skip validation if body is not yet parsed (multer will handle it)
+  if (!req.body) {
+    return next();
+  }
+
   const { week, season } = req.body;
 
   // Validate week if provided

@@ -52,7 +52,11 @@ const MyTeam = () => {
                p.team === player.proTeam)
           );
           if (rankedPlayer) {
-            rankMap[player.fullName] = rankedPlayer.rank;
+            rankMap[player.fullName] = {
+              weeklyRank: rankedPlayer.rank,
+              rosRank: rankedPlayer.rosRank || null,
+              matchup: rankedPlayer.matchup || null
+            };
           }
         });
       });
@@ -158,8 +162,10 @@ const MyTeam = () => {
                   <TableCell>Player</TableCell>
                   <TableCell>Position</TableCell>
                   <TableCell>Team</TableCell>
+                  <TableCell>Matchup</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell align="center">Rank</TableCell>
+                  <TableCell align="center">Week Rank</TableCell>
+                  <TableCell align="center">ROS Rank</TableCell>
                   <TableCell align="right">Proj</TableCell>
                   <TableCell align="right">Actual</TableCell>
                 </TableRow>
@@ -205,6 +211,11 @@ const MyTeam = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
+                      <Typography variant="body2" color="textSecondary">
+                        {playerRankings[player.fullName]?.matchup || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
                       {player.proTeam === 'Bye' ? (
                         <Chip
                           icon={<ByeIcon />}
@@ -223,12 +234,28 @@ const MyTeam = () => {
                       )}
                     </TableCell>
                     <TableCell align="center">
-                      {playerRankings[player.fullName] ? (
+                      {playerRankings[player.fullName]?.weeklyRank ? (
                         <Tooltip title="Weekly Ranking">
                           <Chip
-                            label={`#${playerRankings[player.fullName]}`}
+                            label={`#${playerRankings[player.fullName].weeklyRank}`}
                             size="small"
                             color="primary"
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="body2" color="textSecondary">
+                          -
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {playerRankings[player.fullName]?.rosRank ? (
+                        <Tooltip title="Rest of Season Ranking (ECR™)">
+                          <Chip
+                            label={`#${playerRankings[player.fullName].rosRank}`}
+                            size="small"
+                            color="secondary"
+                            variant="outlined"
                           />
                         </Tooltip>
                       ) : (
