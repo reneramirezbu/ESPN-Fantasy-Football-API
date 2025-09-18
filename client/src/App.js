@@ -13,15 +13,21 @@ import {
   createTheme,
   Button,
   Stack,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Upload as UploadIcon,
   TableChart as TableIcon,
-  Settings as SettingsIcon,
   Delete as DeleteIcon,
-  Compare as CompareIcon,
   Groups as TeamIcon,
   SportsFootball as FootballIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { RankingsProvider, useRankings } from './context/RankingsContext';
 import FileUpload from './components/FileUpload';
@@ -47,6 +53,10 @@ const theme = createTheme({
 const MainContent = () => {
   const [currentTab, setCurrentTab] = useState(0);
   const [nameResolverOpen, setNameResolverOpen] = useState(false);
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
+
   const {
     rankings,
     currentWeek,
@@ -67,6 +77,19 @@ const MainContent = () => {
     setCurrentTab(newValue);
   };
 
+  const handleMobileMenuOpen = (event) => {
+    setMobileMenuAnchor(event.currentTarget);
+  };
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuAnchor(null);
+  };
+
+  const handleMobileMenuItemClick = (index) => {
+    setCurrentTab(index);
+    handleMobileMenuClose();
+  };
+
   const tabs = [
     { label: 'My Team', icon: <TeamIcon /> },
     { label: 'Rankings', icon: <TableIcon /> },
@@ -85,27 +108,57 @@ const MainContent = () => {
             Fantasy Football Dashboard
           </Typography>
           <WeekSelector />
+          {isMobile && (
+            <IconButton
+              edge="end"
+              color="inherit"
+              aria-label="menu"
+              onClick={handleMobileMenuOpen}
+              sx={{ ml: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
         </Toolbar>
-        <Tabs
-          value={currentTab}
-          onChange={handleTabChange}
-          textColor="inherit"
-          indicatorColor="secondary"
-          sx={{ bgcolor: 'primary.dark' }}
-        >
-          {tabs.map((tab, index) => (
-            <Tab
-              key={index}
-              label={tab.label}
-              icon={tab.icon}
-              iconPosition="start"
-              sx={{ minHeight: 48 }}
-            />
-          ))}
-        </Tabs>
+        {!isMobile && (
+          <Tabs
+            value={currentTab}
+            onChange={handleTabChange}
+            textColor="inherit"
+            indicatorColor="secondary"
+            sx={{ bgcolor: 'primary.dark' }}
+          >
+            {tabs.map((tab, index) => (
+              <Tab
+                key={index}
+                label={tab.label}
+                icon={tab.icon}
+                iconPosition="start"
+                sx={{ minHeight: 48 }}
+              />
+            ))}
+          </Tabs>
+        )}
       </AppBar>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: '112px' }}>
+      <Menu
+        anchorEl={mobileMenuAnchor}
+        open={Boolean(mobileMenuAnchor)}
+        onClose={handleMobileMenuClose}
+      >
+        {tabs.map((tab, index) => (
+          <MenuItem
+            key={index}
+            onClick={() => handleMobileMenuItemClick(index)}
+            selected={currentTab === index}
+          >
+            <ListItemIcon>{tab.icon}</ListItemIcon>
+            <ListItemText>{tab.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+
+      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: isMobile ? '64px' : '112px' }}>
         <Container maxWidth="xl">
           {currentTab === 0 && <MyTeam />}
 
