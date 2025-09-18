@@ -3,9 +3,11 @@
 ## Project Overview
 A lightweight POC system for uploading and managing weekly fantasy football rankings from XLSX files. Designed for personal use (few minutes per week) with file-based storage instead of a database.
 
-## Current Status: Phase 1 ✅ COMPLETE
+## Current Status: Phase 2.5 ✅ COMPLETE
 
 ### What's Been Built
+
+#### Phase 1: Backend Infrastructure ✅
 - **XLSX Parser Service** (`services/xlsxParser.js`)
   - Multi-tab parsing (QB, RB, WR, TE, FLEX, DST, K)
   - Column normalization and validation
@@ -35,6 +37,21 @@ A lightweight POC system for uploading and managing weekly fantasy football rank
   - Rankings viewer
   - Status tracking
 
+#### Phase 2: React Frontend ✅
+- Full React application with Material-UI
+- Drag-and-drop file upload with react-dropzone
+- Sortable/filterable rankings table
+- Week/season navigation
+- Context API for state management
+- Running on http://localhost:3000
+
+#### Phase 2.5: ESPN Integration ✅
+- ESPN roster data integrated into React app
+- Team statistics component
+- Player rankings shown alongside roster
+- Unified data context for both rankings and roster
+- Foundation ready for optimizer functionality
+
 ### Security Fixes Applied
 ✅ Path traversal vulnerability fixed
 ✅ File upload security enhanced
@@ -43,10 +60,19 @@ A lightweight POC system for uploading and managing weekly fantasy football rank
 ✅ Atomic file operations for data integrity
 
 ### How to Use
-1. Start server: `node server-express.js`
-2. Navigate to: http://localhost:3001/upload-test.html
-3. Upload XLSX file with rankings
-4. View at: http://localhost:3001/api/rankings?week=X&season=Y
+
+#### Backend Server (Express)
+1. Start server: `node server-express.js` (runs on port 3001)
+2. Old HTML interface: http://localhost:3001/upload-test.html
+
+#### React Frontend (Recommended)
+1. Start React app: `cd client && npm start` (runs on port 3000)
+2. Navigate to: http://localhost:3000
+3. Features:
+   - **My Team**: View ESPN roster with rankings
+   - **Rankings**: View/filter uploaded rankings
+   - **Upload**: Drag-and-drop XLSX files
+   - **Compare**: Week comparison (future)
 
 ### Test Data
 - Generator: `node test-rankings-generator.js`
@@ -55,31 +81,65 @@ A lightweight POC system for uploading and managing weekly fantasy football rank
 
 ---
 
-## Phase 2: React Frontend (NOT STARTED)
-**Estimated Time**: 2-3 hours
+## Phase 2: React Frontend ✅ COMPLETE
+**Completed Time**: 2 hours
 
-### Planned Components
-- `client/src/components/FileUpload.jsx` - Drag-and-drop interface
-- `client/src/components/RankingsTable.jsx` - Sortable/filterable table
-- `client/src/components/NameResolver.jsx` - Manual name matching UI
-- `client/src/components/WeekSelector.jsx` - Week/season navigation
+### Completed Components
+- ✅ `client/src/components/FileUpload.jsx` - Drag-and-drop interface with Material-UI
+- ✅ `client/src/components/RankingsTable.jsx` - Sortable/filterable table with position tabs
+- ✅ `client/src/components/NameResolver.jsx` - Manual name matching dialog
+- ✅ `client/src/components/WeekSelector.jsx` - Week/season navigation with availability indicators
+- ✅ `client/src/context/RankingsContext.js` - Global state management with Context API
+- ✅ `client/src/services/api.js` - API service layer
+- ✅ `client/src/App.js` - Main app with navigation and theming
 
-### Implementation Notes
-- Use react-dropzone for file upload
-- Consider Material-UI or Ant Design for components
-- State management with Context API or Redux
-- Integration with existing Express API
+### Implementation Details
+- Material-UI for consistent design
+- react-dropzone for file uploads
+- Context API for state management
+- Proxy configured for Express backend integration
+- Running on http://localhost:3000
+
+---
+
+## Phase 2.5: ESPN Integration into React App ✅ COMPLETE
+**Completed Time**: 30 minutes
+
+### Purpose
+The optimizer feature requires both rankings data AND ESPN roster data in the same application.
+Integrating the ESPN dashboard into the React app is a prerequisite for the optimizer.
+
+### Components Completed
+- ✅ `client/src/components/MyTeam.jsx` - Displays ESPN roster with rankings integration
+- ✅ `client/src/components/TeamStats.jsx` - Shows team record, points for/against
+- ✅ Updated `client/src/services/api.js` - Added ESPN roster fetching methods
+- ✅ Updated `client/src/context/RankingsContext.js` - Includes roster data alongside rankings
+- ✅ Updated `client/src/App.js` - Added "My Team" navigation option
+
+### Key Features Implemented
+- ESPN roster display with player details, injury status, positions
+- Team statistics showing wins/losses/points
+- Integration showing weekly rankings next to roster players
+- Automatic matching between uploaded rankings and ESPN roster
+- Refresh functionality to update roster data
+
+### Why This Phase is Critical
+- Optimizer needs access to BOTH rankings and roster data
+- Having separate apps makes optimization impossible
+- Unified interface improves user experience
+- Enables all Phase 3 features to work properly
 
 ---
 
 ## Phase 3: Optimization Features (NOT STARTED)
 **Estimated Time**: 2-3 hours
+**Prerequisite**: Phase 2.5 must be complete
 
 ### Lineup Optimizer
 - Algorithm to fill roster slots by rank
 - Handle FLEX position properly
 - Filter OUT/Bye players
-- Integrate with ESPN roster data
+- Integrate with ESPN roster data (from Phase 2.5)
 
 ### Waiver Wire Analysis
 - Compare free agents to bench players
@@ -204,13 +264,13 @@ Using `.env.local`:
 - No automated ESPN sync
 
 ### Next Session Starting Points
-1. **For Frontend**: Start with Phase 2, create React app
-2. **For Optimization**: Jump to Phase 3, implement optimizer
-3. **For Production**: Add database, user auth, multi-league support
+1. **For Optimizer**: Start with Phase 3 - both rankings and roster data are now integrated
+2. **For Production**: Add database, user auth, multi-league support
+3. **For Enhanced Features**: Phase 4 - ROS rankings, trade analyzer, etc.
 
 ### Git Repository
 - Fork: https://github.com/reneramirezbu/ESPN-Fantasy-Football-API
-- Latest commit: `9422d14` - Phase 1 complete with security fixes
+- Latest updates: Phase 2.5 complete - React frontend with ESPN integration
 
 ### Support Files
 - PRD: `tasks/PRD.md` - Original requirements
