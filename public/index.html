@@ -474,10 +474,7 @@
                 <h2>Upload Rankings</h2>
             </div>
 
-            <!-- Week/Season info will be shown after upload -->
-            <div class="week-info" id="weekInfo" style="display: none;">
-                <span id="currentWeekDisplay"></span>
-            </div>
+            <!-- Rankings upload area -->
 
             <div class="upload-area" onclick="document.getElementById('fileInput').click()">
                 <div class="upload-icon">📁</div>
@@ -531,13 +528,10 @@
                     ? 'http://localhost:3001/api/roster'
                     : '/api/roster';
 
-                // Get week and season from stored upload data or defaults
-                const storedWeek = localStorage.getItem('uploadedWeek') || '2';
-                const storedSeason = localStorage.getItem('uploadedSeason') || '2025';
-
+                // Just fetch the current rankings without any parameters
                 const rankingsUrl = window.location.hostname === 'localhost'
-                    ? `http://localhost:3001/api/rankings?week=${storedWeek}&season=${storedSeason}`
-                    : `/api/rankings?week=${storedWeek}&season=${storedSeason}`;
+                    ? 'http://localhost:3001/api/rankings/current'
+                    : '/api/rankings/current';
 
                 // Fetch both roster and rankings data
                 const [rosterResponse, rankingsResponse] = await Promise.all([
@@ -705,19 +699,7 @@
         // File upload functionality
         let selectedFile = null;
 
-        // Show stored week/season on page load if available
-        function showStoredWeekInfo() {
-            const storedWeek = localStorage.getItem('uploadedWeek');
-            const storedSeason = localStorage.getItem('uploadedSeason');
-            if (storedWeek && storedSeason) {
-                const weekInfo = document.getElementById('weekInfo');
-                const display = document.getElementById('currentWeekDisplay');
-                if (weekInfo && display) {
-                    display.textContent = `Rankings: Week ${storedWeek}, Season ${storedSeason}`;
-                    weekInfo.style.display = 'block';
-                }
-            }
-        }
+        // No week/season display needed
 
         // Handle file selection
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -803,9 +785,7 @@
             if (!selectedFile) return;
 
             const statusDiv = document.getElementById('uploadStatus');
-            // Use default values for now (can be made configurable later)
-            const week = '2';
-            const season = '2025';
+            // No week/season needed - just upload the file
 
             // Debug logging
             console.log('Upload Debug Info:', {
@@ -842,8 +822,7 @@
 
             const formData = new FormData();
             formData.append('file', selectedFile);
-            formData.append('week', week);
-            formData.append('season', season);
+            // Just append the file, no week/season needed
 
             try {
                 const apiUrl = window.location.hostname === 'localhost'
@@ -876,18 +855,7 @@
                             const data = JSON.parse(xhr.responseText);
                             if (data.success) {
                                 showSuccess(data);
-                                // Store uploaded week/season for future fetches
-                                const uploadedWeek = data.data?.week || week;
-                                const uploadedSeason = data.data?.season || season;
-                                localStorage.setItem('uploadedWeek', uploadedWeek);
-                                localStorage.setItem('uploadedSeason', uploadedSeason);
-                                // Update display
-                                const weekInfo = document.getElementById('weekInfo');
-                                const display = document.getElementById('currentWeekDisplay');
-                                if (weekInfo && display) {
-                                    display.textContent = `Rankings: Week ${uploadedWeek}, Season ${uploadedSeason}`;
-                                    weekInfo.style.display = 'block';
-                                }
+                                // No need to store or display week/season
                                 // Reset file input
                                 selectedFile = null;
                                 document.getElementById('fileInput').value = '';
@@ -972,7 +940,6 @@
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', function() {
             fetchRoster();
-            showStoredWeekInfo();
         });
 
         // Expose necessary functions to global scope for onclick handlers

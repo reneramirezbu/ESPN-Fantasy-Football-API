@@ -38,18 +38,8 @@ async function saveRankings(rankings) {
       fs.mkdirSync(RANKINGS_DIR, { recursive: true });
     }
 
-    // Validate and sanitize inputs
-    const sanitizedSeason = parseInt(rankings.season, 10);
-    const sanitizedWeek = parseInt(rankings.week, 10);
-
-    if (!sanitizedSeason || sanitizedSeason < 2020 || sanitizedSeason > 2030) {
-      throw new Error('Invalid season year: must be between 2020 and 2030');
-    }
-    if (!sanitizedWeek || sanitizedWeek < 1 || sanitizedWeek > 18) {
-      throw new Error('Invalid week number: must be between 1 and 18');
-    }
-
-    const filename = `${sanitizedSeason}-week${sanitizedWeek}.json`;
+    // Always save as current.json - we only care about the latest upload
+    const filename = 'current.json';
     const filepath = path.join(RANKINGS_DIR, filename);
 
     // Save the rankings
@@ -127,11 +117,12 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Extract week and season
-    const week = fields.week ? parseInt(fields.week[0]) : getCurrentWeek();
-    const season = fields.season ? parseInt(fields.season[0]) : new Date().getFullYear();
+    // Just use current date/time for the file
+    const now = new Date();
+    const week = getCurrentWeek();
+    const season = now.getFullYear();
 
-    console.log(`Processing rankings for Week ${week}, Season ${season}`);
+    console.log(`Processing rankings upload at ${now.toISOString()}`);
 
     // Parse the Excel file
     console.log(`Parsing Excel file: ${file.filepath}`);
