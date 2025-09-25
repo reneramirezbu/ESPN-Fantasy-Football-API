@@ -1,6 +1,54 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../services/api';
 
+const FLEX_ELIGIBLE_POSITIONS = new Set(['RB', 'WR', 'TE']);
+
+const buildPlayerKey = (name = '', team = '', position = '') =>
+  [name, team, position].map(part => part?.toString().toLowerCase().trim() || '').join('|');
+
+const enrichRankings = (data) => {
+  if (!data || !data.positions) {
+    return data;
+  }
+
+  const flexPlayers = data.positions.FLEX || [];
+  const flexLookup = flexPlayers.reduce((acc, player) => {
+    const key = buildPlayerKey(player.name, player.team, player.pos);
+    const rank = player?.flexRank ?? player?.rank ?? null;
+    acc[key] = typeof rank === 'number' ? rank : null;
+    return acc;
+  }, {});
+
+  const enrichedPositions = Object.entries(data.positions).reduce((acc, [position, players]) => {
+    acc[position] = players.map(player => {
+      const positionRank = typeof player.positionRank === 'number' ? player.positionRank : player.rank ?? null;
+      let flexRank = player.flexRank ?? null;
+
+      if (flexRank == null && FLEX_ELIGIBLE_POSITIONS.has(position)) {
+        const key = buildPlayerKey(player.name, player.team, player.pos || position);
+        const lookupRank = flexLookup[key];
+        flexRank = typeof lookupRank === 'number' ? lookupRank : null;
+      }
+
+      return {
+        ...player,
+        positionRank: typeof positionRank === 'number' ? positionRank : null,
+        flexRank,
+      };
+    });
+    return acc;
+  }, {});
+
+  return {
+    ...data,
+    positions: enrichedPositions,
+    metadata: {
+      ...data.metadata,
+      flexLookup,
+    },
+  };
+};
+
 const RankingsContext = createContext();
 
 export const useRankings = () => {
@@ -51,7 +99,7 @@ export const RankingsProvider = ({ children }) => {
       setError(null);
       const response = await api.getRankings(week, season);
       if (response.success) {
-        setRankings(response.data);
+        setRankings(enrichRankings(response.data));
       } else {
         setError(response.error);
       }
@@ -218,6 +266,7 @@ export const RankingsProvider = ({ children }) => {
     fetchMyTeam,
     fetchFreeAgents,
     fetchLeagueTeams,
+    flexLookup: rankings?.metadata?.flexLookup || null,
   };
 
   return (

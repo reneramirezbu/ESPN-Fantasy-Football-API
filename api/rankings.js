@@ -123,7 +123,12 @@ class RankingsAPI {
             sheetsProcessed: rankings.metadata.sheetsProcessed,
             errors: rankings.metadata.errors,
             warnings: rankings.metadata.warnings,
-            matchStatistics: matchStats
+            matchStatistics: matchStats,
+            positionTotals: Object.keys(rankings.positions).reduce((acc, key) => {
+              acc[key] = rankings.positions[key].length;
+              return acc;
+            }, {}),
+            flexRankedCount: (rankings.positions.FLEX || []).filter(player => typeof player.flexRank === 'number').length
           }
         });
       } catch (error) {

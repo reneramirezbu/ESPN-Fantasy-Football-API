@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Paper,
   Table,
@@ -28,41 +28,88 @@ import {
 import { useRankings } from '../context/RankingsContext';
 import TeamStats from './TeamStats';
 
+const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
+
+const buildPlayerKey = (name = '', team = '', position = '') =>
+  [name, team, position].map(part => part?.toString().toLowerCase().trim() || '').join('|');
+
 const MyTeam = () => {
   const { myTeam, fetchMyTeam, loading, error, rankings } = useRankings();
-  const [playerRankings, setPlayerRankings] = useState({});
+
+  const playerRankings = useMemo(() => {
+    if (!myTeam?.roster || !rankings?.positions) {
+      return {};
+    }
+
+    const flexLookup = rankings?.metadata?.flexLookup || {};
+    const rankMap = {};
+
+    const matchPlayer = (player) => {
+      const nameLower = player.fullName?.toLowerCase();
+      const team = player.proTeam;
+      const lastName = player.fullName?.split(' ').slice(-1)[0]?.toLowerCase();
+
+      const positions = Object.entries(rankings.positions);
+
+      for (const [, players] of positions) {
+        const exact = players.find(
+          (p) => p.name?.toLowerCase() === nameLower && (!team || !p.team || p.team === team)
+        );
+        if (exact) {
+          return exact;
+        }
+      }
+
+      if (lastName) {
+        for (const [position, players] of positions) {
+          const loose = players.find((p) => {
+            if (!p.name) return false;
+            const pLastName = p.name.split(' ').slice(-1)[0]?.toLowerCase();
+            return pLastName === lastName && (!team || !p.team || p.team === team);
+          });
+          if (loose) {
+            return loose;
+          }
+        }
+      }
+
+      return null;
+    };
+
+    myTeam.roster.forEach((player) => {
+      const ranking = matchPlayer(player);
+      if (!ranking) {
+        return;
+      }
+
+      const positionRank = ranking.positionRank ?? ranking.rank ?? null;
+
+      let flexRank = ranking.flexRank ?? null;
+      if (flexRank == null && FLEX_ELIGIBLE.has(player.position)) {
+        const key = buildPlayerKey(ranking.name, ranking.team, ranking.pos || player.position);
+        const lookupRank = flexLookup[key];
+        if (typeof lookupRank === 'number') {
+          flexRank = lookupRank;
+        }
+      }
+
+      rankMap[player.fullName] = {
+        weeklyRank: ranking.rank ?? null,
+        positionRank,
+        flexRank,
+        rosRank: ranking.rosRank || null,
+        matchup: ranking.matchup || null,
+      };
+    });
+
+    return rankMap;
+  }, [myTeam, rankings]);
 
   useEffect(() => {
     if (!myTeam) {
       fetchMyTeam();
     }
   }, []);
-
-  useEffect(() => {
-    // Match roster players with rankings
-    if (myTeam?.roster && rankings?.positions) {
-      const rankMap = {};
-      myTeam.roster.forEach((player) => {
-        // Search for player in rankings
-        Object.entries(rankings.positions).forEach(([position, players]) => {
-          const rankedPlayer = players.find(
-            (p) =>
-              p.name?.toLowerCase() === player.fullName?.toLowerCase() ||
-              (p.name?.toLowerCase().includes(player.fullName?.split(' ')[1]?.toLowerCase()) &&
-               p.team === player.proTeam)
-          );
-          if (rankedPlayer) {
-            rankMap[player.fullName] = {
-              weeklyRank: rankedPlayer.rank,
-              rosRank: rankedPlayer.rosRank || null,
-              matchup: rankedPlayer.matchup || null
-            };
-          }
-        });
-      });
-      setPlayerRankings(rankMap);
-    }
-  }, [myTeam, rankings]);
 
   const getInjuryIcon = (status) => {
     switch (status) {
@@ -164,6 +211,8 @@ const MyTeam = () => {
                   <TableCell>Team</TableCell>
                   <TableCell>Matchup</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell align="center">Pos Rank</TableCell>
+                  <TableCell align="center">Flex Rank</TableCell>
                   <TableCell align="center">Week Rank</TableCell>
                   <TableCell align="center">ROS Rank</TableCell>
                   <TableCell align="right">Proj</TableCell>
@@ -231,6 +280,37 @@ const MyTeam = () => {
                           color={getInjuryColor(player.injuryStatus)}
                           variant="outlined"
                         />
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {playerRankings[player.fullName]?.positionRank ? (
+                        <Tooltip title="Position Ranking">
+                          <Chip
+                            label={`#${playerRankings[player.fullName].positionRank}`}
+                            size="small"
+                            color="info"
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="body2" color="textSecondary">
+                          -
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {typeof playerRankings[player.fullName]?.flexRank === 'number' && FLEX_ELIGIBLE.has(player.position) ? (
+                        <Tooltip title="Flex Ranking">
+                          <Chip
+                            label={`#${playerRankings[player.fullName].flexRank}`}
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="body2" color="textSecondary">
+                          -
+                        </Typography>
                       )}
                     </TableCell>
                     <TableCell align="center">

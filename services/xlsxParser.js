@@ -54,14 +54,26 @@ class XLSXParser {
       };
 
       // Process each position sheet
+      const flexPlayers = [];
+
       for (const sheetName of foundPositions) {
         const sheet = workbook.Sheets[sheetName];
         const position = sheetName.toUpperCase();
 
         const players = this.parseSheet(sheet, position);
+
+        // store flex separately for enrichment step
+        if (position === 'FLEX') {
+          flexPlayers.push(...players);
+        }
+
         rankings.positions[position] = players;
         rankings.metadata.totalPlayers += players.length;
         rankings.metadata.sheetsProcessed.push(position);
+      }
+
+      if (flexPlayers.length > 0) {
+        this.enrichWithFlexRanks(rankings.positions, flexPlayers);
       }
 
       // Add any errors/warnings to metadata
@@ -84,13 +96,29 @@ class XLSXParser {
       defval: null
     });
 
-    const players = [];
+    if (jsonData.length === 0) {
+      return [];
+    }
+
     const normalizedHeaders = this.getNormalizedHeaders(jsonData[0]);
+    const positionCounts = new Map();
+    const players = [];
 
     jsonData.forEach((row, index) => {
       try {
         const player = this.extractPlayerData(row, normalizedHeaders, positionName);
         if (player) {
+          // Attach position rank (1-indexed within sheet order)
+          if (positionName === 'FLEX') {
+            positionCounts.set('FLEX', (positionCounts.get('FLEX') || 0) + 1);
+            player.flexRank = positionCounts.get('FLEX');
+          } else {
+            positionCounts.set(positionName, (positionCounts.get(positionName) || 0) + 1);
+            player.positionRank = positionCounts.get(positionName);
+            player.flexRank = null;
+          }
+
+          player.sourcePosition = positionName;
           players.push(player);
         }
       } catch (error) {
@@ -226,6 +254,36 @@ class XLSXParser {
     }
 
     return null; // Skip empty rows
+  }
+
+  enrichWithFlexRanks(positions, flexPlayers) {
+    const flexMap = new Map();
+
+    flexPlayers.forEach((player) => {
+      const key = this.getPlayerKey(player.name, player.team, player.pos);
+      flexMap.set(key, player);
+    });
+
+    const flexEligiblePositions = ['RB', 'WR', 'TE'];
+
+    flexEligiblePositions.forEach((position) => {
+      if (!positions[position]) {
+        return;
+      }
+
+      positions[position].forEach((player) => {
+        const key = this.getPlayerKey(player.name, player.team, player.pos || position);
+        const flexPlayer = flexMap.get(key);
+
+        if (flexPlayer) {
+          player.flexRank = flexPlayer.flexRank || flexPlayer.rank || null;
+        }
+      });
+    });
+  }
+
+  getPlayerKey(name, team, position) {
+    return [name, team, position].map((value) => (value || '').toString().toLowerCase().trim()).join('|');
   }
 
   /**
