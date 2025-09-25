@@ -259,6 +259,19 @@
             color: var(--text-primary);
         }
 
+        .rank {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .rank-good {
+            color: var(--success-color);
+        }
+
+        .rank-bad {
+            color: var(--error-color);
+        }
+
         /* Upload Section Styles */
         .upload-area {
             border: 2px dashed var(--primary-color);
@@ -542,22 +555,37 @@
 
             try {
                 // Determine API URL based on environment
-                const apiUrl = window.location.hostname === 'localhost'
+                const rosterUrl = window.location.hostname === 'localhost'
                     ? 'http://localhost:3001/api/roster'
                     : '/api/roster';
 
-                const response = await fetch(apiUrl);
-                const data = await response.json();
+                const rankingsUrl = window.location.hostname === 'localhost'
+                    ? 'http://localhost:3001/api/rankings'
+                    : '/api/rankings';
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch roster');
+                // Fetch both roster and rankings data
+                const [rosterResponse, rankingsResponse] = await Promise.all([
+                    fetch(rosterUrl),
+                    fetch(rankingsUrl).catch(() => null) // Don't fail if rankings not available
+                ]);
+
+                const rosterData = await rosterResponse.json();
+
+                if (!rosterResponse.ok) {
+                    throw new Error(rosterData.error || 'Failed to fetch roster');
                 }
 
-                if (data.success && data.team) {
-                    displayRoster(data.team);
-                } else {
-                    throw new Error('Invalid response format');
+                if (!rosterData.success || !rosterData.team) {
+                    throw new Error('Invalid roster response format');
                 }
+
+                // Try to get rankings data
+                let rankingsData = null;
+                if (rankingsResponse && rankingsResponse.ok) {
+                    rankingsData = await rankingsResponse.json();
+                }
+
+                displayRoster(rosterData.team, rankingsData);
             } catch (error) {
                 contentDiv.innerHTML = `
                     <div class="error">
@@ -571,7 +599,7 @@
         }
 
         // Function to display roster data
-        function displayRoster(team) {
+        function displayRoster(team, rankingsData) {
             const contentDiv = document.getElementById('content');
 
             // Sort roster by lineup slot order
@@ -579,6 +607,15 @@
             const sortedRoster = [...team.roster].sort((a, b) => {
                 return slotOrder.indexOf(a.lineupSlot) - slotOrder.indexOf(b.lineupSlot);
             });
+
+            // Add ranking data to each player
+            if (rankingsData && rankingsData.success && rankingsData.data) {
+                sortedRoster.forEach(player => {
+                    const rankings = findPlayerRankings(player, rankingsData.data);
+                    player.positionRank = rankings.positionRank;
+                    player.flexRank = rankings.flexRank;
+                });
+            }
 
             contentDiv.innerHTML = `
                 <div class="team-stats">
@@ -607,6 +644,8 @@
                             <th>Player</th>
                             <th>Position</th>
                             <th>Team</th>
+                            <th>Pos Rank</th>
+                            <th>Flex Rank</th>
                             <th>Projected</th>
                             <th>Actual</th>
                         </tr>
@@ -628,6 +667,12 @@
                                 </td>
                                 <td>${player.proTeam}</td>
                                 <td>
+                                    <span class="rank">${player.positionRank || '-'}</span>
+                                </td>
+                                <td>
+                                    <span class="rank">${player.flexRank || '-'}</span>
+                                </td>
+                                <td>
                                     <span class="points projected">${player.projectedPoints}</span>
                                 </td>
                                 <td>
@@ -638,6 +683,47 @@
                     </tbody>
                 </table>
             `;
+        }
+
+        // Function to find player rankings
+        function findPlayerRankings(player, rankingsData) {
+            const result = { positionRank: null, flexRank: null };
+
+            if (!rankingsData.positions) {
+                return result;
+            }
+
+            const playerName = player.fullName?.toLowerCase().trim();
+            const playerTeam = player.proTeam?.toLowerCase().trim();
+            const playerPosition = player.position?.toUpperCase();
+
+            // Look for position ranking
+            if (rankingsData.positions[playerPosition]) {
+                const posRanking = rankingsData.positions[playerPosition].find(rankedPlayer => {
+                    const rankedName = rankedPlayer.name?.toLowerCase().trim();
+                    const rankedTeam = rankedPlayer.team?.toLowerCase().trim();
+                    return rankedName === playerName && rankedTeam === playerTeam;
+                });
+
+                if (posRanking) {
+                    result.positionRank = posRanking.rank;
+                }
+            }
+
+            // Look for FLEX ranking
+            if (rankingsData.positions['FLEX'] && ['RB', 'WR', 'TE'].includes(playerPosition)) {
+                const flexRanking = rankingsData.positions['FLEX'].find(rankedPlayer => {
+                    const rankedName = rankedPlayer.name?.toLowerCase().trim();
+                    const rankedTeam = rankedPlayer.team?.toLowerCase().trim();
+                    return rankedName === playerName && rankedTeam === playerTeam;
+                });
+
+                if (flexRanking) {
+                    result.flexRank = flexRanking.rank;
+                }
+            }
+
+            return result;
         }
 
         // File upload functionality
