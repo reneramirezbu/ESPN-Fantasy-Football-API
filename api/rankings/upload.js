@@ -1,18 +1,14 @@
-import formidable from 'formidable';
-import fs from 'fs';
-import path from 'path';
-import { getCORSHeaders } from '../../utils/rosterUtils';
-
-// XLSXParser uses CommonJS, import via createRequire for Vercel compatibility
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+const formidable = require('formidable');
+const fs = require('fs');
+const path = require('path');
+const { getCORSHeaders } = require('../../utils/rosterUtils');
 const XLSXParser = require('../../services/xlsxParser.js');
 
 // Configuration constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const CURRENT_SEASON_START = new Date().getFullYear() + '-09-05'; // NFL season typically starts in September
 
-export const config = {
+module.exports.config = {
   api: {
     bodyParser: false, // Disable body parsing, formidable will handle it
   },
@@ -75,7 +71,7 @@ async function saveRankings(rankings) {
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   const corsHeaders = getCORSHeaders(req);
   Object.entries(corsHeaders).forEach(([key, value]) => {
