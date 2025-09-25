@@ -1,11 +1,11 @@
 import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
+import { getCORSHeaders } from '../../utils/rosterUtils';
 
-// Import CommonJS modules using createRequire
+// XLSXParser uses CommonJS, import via createRequire for Vercel compatibility
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { getCORSHeaders } = require('../../utils/rosterUtils');
 const XLSXParser = require('../../services/xlsxParser.js');
 
 // Configuration constants
@@ -34,15 +34,36 @@ function getCurrentWeek() {
 
 async function saveRankings(rankings) {
   try {
-    // Use the XLSXParser's built-in save method for consistency
-    const parser = new XLSXParser();
-    const result = parser.saveRankings(rankings);
+    // Save to Vercel's expected directory for consistency with other endpoints
+    const RANKINGS_DIR = '/tmp/rankings';
+
+    // Ensure directory exists
+    if (!fs.existsSync(RANKINGS_DIR)) {
+      fs.mkdirSync(RANKINGS_DIR, { recursive: true });
+    }
+
+    // Validate and sanitize inputs
+    const sanitizedSeason = parseInt(rankings.season, 10);
+    const sanitizedWeek = parseInt(rankings.week, 10);
+
+    if (!sanitizedSeason || sanitizedSeason < 2020 || sanitizedSeason > 2030) {
+      throw new Error('Invalid season year: must be between 2020 and 2030');
+    }
+    if (!sanitizedWeek || sanitizedWeek < 1 || sanitizedWeek > 18) {
+      throw new Error('Invalid week number: must be between 1 and 18');
+    }
+
+    const filename = `${sanitizedSeason}-week${sanitizedWeek}.json`;
+    const filepath = path.join(RANKINGS_DIR, filename);
+
+    // Save the rankings
+    fs.writeFileSync(filepath, JSON.stringify(rankings, null, 2));
 
     return {
       success: true,
-      filename: result.filename,
-      filepath: result.filepath,
-      totalPlayers: result.totalPlayers,
+      filename,
+      filepath,
+      totalPlayers: rankings.metadata.totalPlayers,
       message: 'Rankings saved successfully'
     };
   } catch (error) {
