@@ -792,8 +792,6 @@
                 file: selectedFile.name,
                 fileSize: selectedFile.size,
                 fileType: selectedFile.type,
-                week: week,
-                season: season,
                 hostname: window.location.hostname,
                 port: window.location.port,
                 protocol: window.location.protocol
@@ -804,7 +802,7 @@
             progressDiv.className = 'upload-progress';
 
             const progressText = document.createElement('div');
-            progressText.textContent = `Uploading rankings for Week ${week}, Season ${season}...`;
+            progressText.textContent = 'Uploading rankings...';
 
             const progressBar = document.createElement('div');
             progressBar.className = 'progress-bar';
