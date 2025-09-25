@@ -474,37 +474,9 @@
                 <h2>Upload Rankings</h2>
             </div>
 
-            <div class="week-selector">
-                <div class="selector-group">
-                    <label class="selector-label">Week:</label>
-                    <select id="weekSelect" class="selector-input">
-                        <option value="1">Week 1</option>
-                        <option value="2">Week 2</option>
-                        <option value="3">Week 3</option>
-                        <option value="4">Week 4</option>
-                        <option value="5">Week 5</option>
-                        <option value="6">Week 6</option>
-                        <option value="7">Week 7</option>
-                        <option value="8">Week 8</option>
-                        <option value="9">Week 9</option>
-                        <option value="10">Week 10</option>
-                        <option value="11">Week 11</option>
-                        <option value="12">Week 12</option>
-                        <option value="13">Week 13</option>
-                        <option value="14">Week 14</option>
-                        <option value="15">Week 15</option>
-                        <option value="16">Week 16</option>
-                        <option value="17">Week 17</option>
-                        <option value="18">Week 18</option>
-                    </select>
-                </div>
-                <div class="selector-group">
-                    <label class="selector-label">Season:</label>
-                    <select id="seasonSelect" class="selector-input">
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                    </select>
-                </div>
+            <!-- Week/Season info will be shown after upload -->
+            <div class="week-info" id="weekInfo" style="display: none;">
+                <span id="currentWeekDisplay"></span>
             </div>
 
             <div class="upload-area" onclick="document.getElementById('fileInput').click()">
@@ -559,15 +531,13 @@
                     ? 'http://localhost:3001/api/roster'
                     : '/api/roster';
 
-                // Get current week and season for rankings
-                const weekSelect = document.getElementById('weekSelect');
-                const seasonSelect = document.getElementById('seasonSelect');
-                const currentWeek = weekSelect ? weekSelect.value : '2';
-                const currentSeason = seasonSelect ? seasonSelect.value : '2025';
+                // Get week and season from stored upload data or defaults
+                const storedWeek = localStorage.getItem('uploadedWeek') || '2';
+                const storedSeason = localStorage.getItem('uploadedSeason') || '2025';
 
                 const rankingsUrl = window.location.hostname === 'localhost'
-                    ? `http://localhost:3001/api/rankings?week=${currentWeek}&season=${currentSeason}`
-                    : `/api/rankings?week=${currentWeek}&season=${currentSeason}`;
+                    ? `http://localhost:3001/api/rankings?week=${storedWeek}&season=${storedSeason}`
+                    : `/api/rankings?week=${storedWeek}&season=${storedSeason}`;
 
                 // Fetch both roster and rankings data
                 const [rosterResponse, rankingsResponse] = await Promise.all([
@@ -735,19 +705,18 @@
         // File upload functionality
         let selectedFile = null;
 
-        // Set current week and season on page load
-        function setCurrentWeekAndSeason() {
-            const currentDate = new Date();
-            const currentYear = currentDate.getFullYear();
-
-            // Set season
-            document.getElementById('seasonSelect').value = currentYear;
-
-            // Calculate approximate NFL week (rough estimate)
-            const seasonStart = new Date(currentYear, 8, 1); // September 1st
-            const weeksSinceStart = Math.floor((currentDate - seasonStart) / (7 * 24 * 60 * 60 * 1000));
-            const estimatedWeek = Math.min(Math.max(1, weeksSinceStart - 1), 18);
-            document.getElementById('weekSelect').value = estimatedWeek;
+        // Show stored week/season on page load if available
+        function showStoredWeekInfo() {
+            const storedWeek = localStorage.getItem('uploadedWeek');
+            const storedSeason = localStorage.getItem('uploadedSeason');
+            if (storedWeek && storedSeason) {
+                const weekInfo = document.getElementById('weekInfo');
+                const display = document.getElementById('currentWeekDisplay');
+                if (weekInfo && display) {
+                    display.textContent = `Rankings: Week ${storedWeek}, Season ${storedSeason}`;
+                    weekInfo.style.display = 'block';
+                }
+            }
         }
 
         // Handle file selection
@@ -834,8 +803,9 @@
             if (!selectedFile) return;
 
             const statusDiv = document.getElementById('uploadStatus');
-            const week = document.getElementById('weekSelect').value;
-            const season = document.getElementById('seasonSelect').value;
+            // Use default values for now (can be made configurable later)
+            const week = '2';
+            const season = '2025';
 
             // Debug logging
             console.log('Upload Debug Info:', {
@@ -906,6 +876,18 @@
                             const data = JSON.parse(xhr.responseText);
                             if (data.success) {
                                 showSuccess(data);
+                                // Store uploaded week/season for future fetches
+                                const uploadedWeek = data.data?.week || week;
+                                const uploadedSeason = data.data?.season || season;
+                                localStorage.setItem('uploadedWeek', uploadedWeek);
+                                localStorage.setItem('uploadedSeason', uploadedSeason);
+                                // Update display
+                                const weekInfo = document.getElementById('weekInfo');
+                                const display = document.getElementById('currentWeekDisplay');
+                                if (weekInfo && display) {
+                                    display.textContent = `Rankings: Week ${uploadedWeek}, Season ${uploadedSeason}`;
+                                    weekInfo.style.display = 'block';
+                                }
                                 // Reset file input
                                 selectedFile = null;
                                 document.getElementById('fileInput').value = '';
@@ -990,7 +972,7 @@
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', function() {
             fetchRoster();
-            setCurrentWeekAndSeason();
+            showStoredWeekInfo();
         });
 
         // Expose necessary functions to global scope for onclick handlers
