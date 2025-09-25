@@ -559,9 +559,15 @@
                     ? 'http://localhost:3001/api/roster'
                     : '/api/roster';
 
+                // Get current week and season for rankings
+                const weekSelect = document.getElementById('weekSelect');
+                const seasonSelect = document.getElementById('seasonSelect');
+                const currentWeek = weekSelect ? weekSelect.value : '2';
+                const currentSeason = seasonSelect ? seasonSelect.value : '2025';
+
                 const rankingsUrl = window.location.hostname === 'localhost'
-                    ? 'http://localhost:3001/api/rankings'
-                    : '/api/rankings';
+                    ? `http://localhost:3001/api/rankings?week=${currentWeek}&season=${currentSeason}`
+                    : `/api/rankings?week=${currentWeek}&season=${currentSeason}`;
 
                 // Fetch both roster and rankings data
                 const [rosterResponse, rankingsResponse] = await Promise.all([
@@ -903,6 +909,10 @@
                                 // Reset file input
                                 selectedFile = null;
                                 document.getElementById('fileInput').value = '';
+                                // Refresh roster to show new rankings
+                                setTimeout(() => {
+                                    fetchRoster();
+                                }, 1000);
                             } else {
                                 console.error('Upload failed:', data);
                                 showError(data.error || 'Upload failed');
@@ -944,7 +954,10 @@
             titleDiv.textContent = '✅ Rankings uploaded successfully!';
 
             const detailsDiv = document.createElement('div');
-            detailsDiv.textContent = `Processed ${data.totalPlayers || 0} players from ${data.sheetsProcessed?.length || 0} positions`;
+            // Access nested data.data properties from API response
+            const totalPlayers = data.data?.totalPlayers || 0;
+            const positionsCount = data.data?.sheetsProcessed?.length || 0;
+            detailsDiv.textContent = `Processed ${totalPlayers} players from ${positionsCount} positions`;
 
             successDiv.appendChild(titleDiv);
             successDiv.appendChild(detailsDiv);
