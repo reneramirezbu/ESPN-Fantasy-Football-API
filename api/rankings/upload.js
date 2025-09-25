@@ -42,8 +42,20 @@ async function saveRankings(rankings) {
     const filename = 'current.json';
     const filepath = path.join(RANKINGS_DIR, filename);
 
+    // Debug logging before save
+    console.log('About to save rankings to:', filepath);
+    console.log('RANKINGS_DIR exists:', fs.existsSync(RANKINGS_DIR));
+    console.log('Rankings object keys:', Object.keys(rankings));
+
     // Save the rankings
     fs.writeFileSync(filepath, JSON.stringify(rankings, null, 2));
+
+    // Debug logging after save
+    console.log('Rankings saved successfully');
+    console.log('File exists after save:', fs.existsSync(filepath));
+    if (fs.existsSync(RANKINGS_DIR)) {
+      console.log('Directory contents after save:', fs.readdirSync(RANKINGS_DIR));
+    }
 
     return {
       success: true,

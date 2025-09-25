@@ -26,8 +26,19 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Debug logging
+    console.log('Current rankings endpoint called');
+    console.log('Checking RANKINGS_DIR:', RANKINGS_DIR);
+    console.log('Directory exists:', fs.existsSync(RANKINGS_DIR));
+
+    if (fs.existsSync(RANKINGS_DIR)) {
+      const dirContents = fs.readdirSync(RANKINGS_DIR);
+      console.log('Directory contents:', dirContents);
+    }
+
     // Check if rankings directory exists
     if (!fs.existsSync(RANKINGS_DIR)) {
+      console.log('Rankings directory does not exist');
       return res.status(404).json({
         success: false,
         error: 'No rankings uploaded yet'
