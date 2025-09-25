@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-import { getCORSHeaders } from '../../utils/rosterUtils';
+const fs = require('fs');
+const path = require('path');
+const { getCORSHeaders } = require('../../utils/rosterUtils');
 
 // For Vercel, we use /tmp for temporary storage
 const RANKINGS_DIR = '/tmp/rankings';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   const corsHeaders = getCORSHeaders(req);
   Object.entries(corsHeaders).forEach(([key, value]) => {
