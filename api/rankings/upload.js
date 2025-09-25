@@ -1,6 +1,10 @@
-const formidable = require('formidable');
-const fs = require('fs');
-const path = require('path');
+import formidable from 'formidable';
+import fs from 'fs';
+import path from 'path';
+
+// Import CommonJS modules using createRequire
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const { getCORSHeaders } = require('../../utils/rosterUtils');
 const XLSXParser = require('../../services/xlsxParser.js');
 
@@ -8,7 +12,7 @@ const XLSXParser = require('../../services/xlsxParser.js');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const CURRENT_SEASON_START = new Date().getFullYear() + '-09-05'; // NFL season typically starts in September
 
-const config = {
+export const config = {
   api: {
     bodyParser: false, // Disable body parsing, formidable will handle it
   },
@@ -50,7 +54,7 @@ async function saveRankings(rankings) {
   }
 }
 
-async function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers
   const corsHeaders = getCORSHeaders(req);
   Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -175,5 +179,3 @@ async function handler(req, res) {
   }
 }
 
-module.exports = handler;
-module.exports.config = config;
