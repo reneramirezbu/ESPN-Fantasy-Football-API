@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { getCORSHeaders } = require('../../utils/rosterUtils');
 
+// Global variable to store current rankings in memory
+global.currentRankings = global.currentRankings || null;
+
 // For Vercel, we use /tmp for temporary storage
 const RANKINGS_DIR = '/tmp/rankings';
 
@@ -28,17 +31,27 @@ module.exports = async function handler(req, res) {
   try {
     // Debug logging
     console.log('Current rankings endpoint called');
+    console.log('Global rankings available:', !!global.currentRankings);
     console.log('Checking RANKINGS_DIR:', RANKINGS_DIR);
     console.log('Directory exists:', fs.existsSync(RANKINGS_DIR));
+
+    // First, try to get rankings from memory
+    if (global.currentRankings) {
+      console.log('Returning rankings from memory');
+      return res.status(200).json({
+        success: true,
+        data: global.currentRankings
+      });
+    }
 
     if (fs.existsSync(RANKINGS_DIR)) {
       const dirContents = fs.readdirSync(RANKINGS_DIR);
       console.log('Directory contents:', dirContents);
     }
 
-    // Check if rankings directory exists
+    // Fallback to filesystem if memory is empty
     if (!fs.existsSync(RANKINGS_DIR)) {
-      console.log('Rankings directory does not exist');
+      console.log('Rankings directory does not exist and no memory cache');
       return res.status(404).json({
         success: false,
         error: 'No rankings uploaded yet'
@@ -49,15 +62,20 @@ module.exports = async function handler(req, res) {
     const currentFile = path.join(RANKINGS_DIR, 'current.json');
 
     if (!fs.existsSync(currentFile)) {
+      console.log('Current.json file does not exist and no memory cache');
       return res.status(404).json({
         success: false,
         error: 'No rankings available. Please upload rankings first.'
       });
     }
 
-    // Read and return the current rankings
+    // Read and return the current rankings from file
+    console.log('Reading rankings from filesystem');
     const fileContent = fs.readFileSync(currentFile, 'utf8');
     const rankings = JSON.parse(fileContent);
+
+    // Store in memory for next time
+    global.currentRankings = rankings;
 
     return res.status(200).json({
       success: true,

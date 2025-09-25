@@ -4,6 +4,9 @@ const path = require('path');
 const { getCORSHeaders } = require('../../utils/rosterUtils');
 const XLSXParser = require('../../services/xlsxParser.js');
 
+// Global variable to store current rankings in memory (persists across requests)
+global.currentRankings = global.currentRankings || null;
+
 // Configuration constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const CURRENT_SEASON_START = new Date().getFullYear() + '-09-05'; // NFL season typically starts in September
@@ -47,12 +50,16 @@ async function saveRankings(rankings) {
     console.log('RANKINGS_DIR exists:', fs.existsSync(RANKINGS_DIR));
     console.log('Rankings object keys:', Object.keys(rankings));
 
-    // Save the rankings
+    // Save the rankings to filesystem
     fs.writeFileSync(filepath, JSON.stringify(rankings, null, 2));
 
+    // Also save to global memory for persistence across function calls
+    global.currentRankings = rankings;
+
     // Debug logging after save
-    console.log('Rankings saved successfully');
+    console.log('Rankings saved successfully to file and memory');
     console.log('File exists after save:', fs.existsSync(filepath));
+    console.log('Global rankings stored:', !!global.currentRankings);
     if (fs.existsSync(RANKINGS_DIR)) {
       console.log('Directory contents after save:', fs.readdirSync(RANKINGS_DIR));
     }
