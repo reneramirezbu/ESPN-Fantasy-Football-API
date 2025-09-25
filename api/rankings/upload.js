@@ -1,115 +1,27 @@
-import formidable from 'formidable';
-import fs from 'fs';
-import path from 'path';
-import { getCORSHeaders } from '../../utils/rosterUtils';
+const formidable = require('formidable');
+const fs = require('fs');
+const path = require('path');
+const { getCORSHeaders } = require('../../utils/rosterUtils');
+const XLSXParser = require('../../services/xlsxParser.js');
 
-// We need to use a more permanent storage solution for Vercel
-// For now, we'll use /tmp which is available in Vercel functions
-const XLSX = require('xlsx');
+// Configuration constants
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const CURRENT_SEASON_START = new Date().getFullYear() + '-09-05'; // NFL season typically starts in September
 
-// Position tabs we expect in the XLSX file
-const POSITION_TABS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K'];
-
-export const config = {
+const config = {
   api: {
     bodyParser: false, // Disable body parsing, formidable will handle it
   },
 };
 
 function parseExcelFile(filePath, week, season) {
-  try {
-    // Read the workbook
-    const workbook = XLSX.readFile(filePath);
-    const sheetNames = workbook.SheetNames;
-
-    // Check for expected position tabs
-    const foundPositions = sheetNames.filter(name =>
-      POSITION_TABS.includes(name.toUpperCase())
-    );
-
-    if (foundPositions.length === 0) {
-      throw new Error(`No valid position tabs found. Expected: ${POSITION_TABS.join(', ')}`);
-    }
-
-    const rankings = {
-      week: week || getCurrentWeek(),
-      season: season || new Date().getFullYear(),
-      uploadedAt: new Date().toISOString(),
-      positions: {},
-      metadata: {
-        totalPlayers: 0,
-        sheetsProcessed: [],
-        errors: [],
-        warnings: []
-      }
-    };
-
-    // Process each position sheet
-    for (const sheetName of foundPositions) {
-      const sheet = workbook.Sheets[sheetName];
-      const position = sheetName.toUpperCase();
-
-      const jsonData = XLSX.utils.sheet_to_json(sheet, {
-        raw: false,
-        defval: null
-      });
-
-      const players = [];
-
-      jsonData.forEach((row) => {
-        // Handle Weekly Rankings format
-        if (row['Player (team)']) {
-          const playerWithTeam = row['Player (team)'];
-          const match = playerWithTeam.match(/^(.+?)\s*\(([A-Z]+)\)$/);
-
-          if (match) {
-            const playerName = match[1].trim();
-            const team = match[2];
-            const weeklyRank = row['#'] ? parseInt(row['#'], 10) : null;
-            const rosRank = row['ECR™'] || row['ECR'] ? parseInt(row['ECR™'] || row['ECR'], 10) : null;
-            const matchup = row['Matchup'] || null;
-
-            // For FLEX sheet, extract position from Pos column
-            let playerPosition = position;
-            if (row['Pos']) {
-              const posMatch = row['Pos'].match(/^([A-Z]+)/);
-              if (posMatch) {
-                playerPosition = posMatch[1];
-              }
-            }
-
-            if (playerName && weeklyRank) {
-              players.push({
-                name: playerName,
-                team: team,
-                pos: playerPosition,
-                rank: weeklyRank,
-                rosRank: rosRank,
-                matchup: matchup
-              });
-            }
-          }
-        }
-      });
-
-      // Sort by rank
-      players.sort((a, b) => a.rank - b.rank);
-
-      rankings.positions[position] = players;
-      rankings.metadata.totalPlayers += players.length;
-      rankings.metadata.sheetsProcessed.push(position);
-    }
-
-    return rankings;
-  } catch (error) {
-    console.error('Error parsing XLSX file:', error);
-    throw error;
-  }
+  // Use the proven XLSXParser class - let errors bubble up naturally
+  const parser = new XLSXParser();
+  return parser.parseRankingsFile(filePath, week, season);
 }
 
 function getCurrentWeek() {
-  // Simple week calculation - you may want to adjust based on NFL season
-  const seasonStart = new Date('2024-09-05'); // NFL 2024 season start
+  const seasonStart = new Date(CURRENT_SEASON_START);
   const now = new Date();
   const diffTime = Math.abs(now - seasonStart);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -118,22 +30,16 @@ function getCurrentWeek() {
 
 async function saveRankings(rankings) {
   try {
-    // For Vercel, we'll store in /tmp temporarily
-    // In production, you'd want to use Vercel Blob Storage or a database
-    const dataDir = '/tmp/rankings';
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    const filename = `${rankings.season}-week${rankings.week}.json`;
-    const filepath = path.join(dataDir, filename);
-
-    fs.writeFileSync(filepath, JSON.stringify(rankings, null, 2));
+    // Use the XLSXParser's built-in save method for consistency
+    const parser = new XLSXParser();
+    const result = parser.saveRankings(rankings);
 
     return {
       success: true,
-      filename,
-      message: 'Rankings saved successfully (temporary storage)'
+      filename: result.filename,
+      filepath: result.filepath,
+      totalPlayers: result.totalPlayers,
+      message: 'Rankings saved successfully'
     };
   } catch (error) {
     console.error('Error saving rankings:', error);
@@ -144,7 +50,7 @@ async function saveRankings(rankings) {
   }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Set CORS headers
   const corsHeaders = getCORSHeaders(req);
   Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -165,9 +71,11 @@ export default async function handler(req, res) {
   }
 
   const form = formidable({
-    maxFileSize: 10 * 1024 * 1024, // 10MB
+    maxFileSize: MAX_FILE_SIZE,
     keepExtensions: true,
   });
+
+  let tempFile = null;
 
   try {
     const [fields, files] = await form.parse(req);
@@ -178,6 +86,7 @@ export default async function handler(req, res) {
 
     // Get the uploaded file
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
+    tempFile = file; // Store for cleanup
 
     if (!file) {
       return res.status(400).json({
@@ -204,24 +113,33 @@ export default async function handler(req, res) {
     console.log(`Processing rankings for Week ${week}, Season ${season}`);
 
     // Parse the Excel file
+    console.log(`Parsing Excel file: ${file.filepath}`);
     const rankings = parseExcelFile(file.filepath, week, season);
 
+    console.log(`Parsed ${rankings.metadata.totalPlayers} players from ${rankings.metadata.sheetsProcessed.length} sheets`);
+
+    // Check if there were any parsing errors
+    if (rankings.metadata.errors.length > 0) {
+      console.warn('Parsing errors occurred:', rankings.metadata.errors);
+    }
+
+    if (rankings.metadata.warnings.length > 0) {
+      console.warn('Parsing warnings occurred:', rankings.metadata.warnings);
+    }
+
     // Save rankings
+    console.log('Saving rankings to persistent storage...');
     const saveResult = await saveRankings(rankings);
 
     if (!saveResult.success) {
+      console.error('Failed to save rankings:', saveResult.error);
       return res.status(500).json({
         success: false,
         error: saveResult.error || 'Failed to save rankings'
       });
     }
 
-    // Clean up temp file
-    try {
-      fs.unlinkSync(file.filepath);
-    } catch (err) {
-      console.error('Error cleaning up temp file:', err);
-    }
+    console.log(`Successfully saved rankings to: ${saveResult.filepath}`);
 
     return res.status(200).json({
       success: true,
@@ -229,10 +147,12 @@ export default async function handler(req, res) {
         week: rankings.week,
         season: rankings.season,
         filename: saveResult.filename,
+        filepath: saveResult.filepath,
         totalPlayers: rankings.metadata.totalPlayers,
         sheetsProcessed: rankings.metadata.sheetsProcessed,
         errors: rankings.metadata.errors,
-        warnings: rankings.metadata.warnings
+        warnings: rankings.metadata.warnings,
+        uploadedAt: rankings.uploadedAt
       }
     });
 
@@ -242,5 +162,18 @@ export default async function handler(req, res) {
       success: false,
       error: error.message || 'Internal server error'
     });
+  } finally {
+    // Always clean up temp file
+    if (tempFile && tempFile.filepath) {
+      try {
+        fs.unlinkSync(tempFile.filepath);
+        console.log('Cleaned up temp file:', tempFile.filepath);
+      } catch (err) {
+        console.error('Error cleaning up temp file:', err);
+      }
+    }
   }
 }
+
+module.exports = handler;
+module.exports.config = config;
